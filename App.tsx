@@ -28,7 +28,6 @@ const App: React.FC = () => {
   const [selectedCharId, setSelectedCharId] = useState('');
   const [selectedSkill, setSelectedSkill] = useState(SKILLS[0].name);
   const [diceValue, setDiceValue] = useState<number | ''>('');
-  const [lastRolledId, setLastRolledId] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const loremaster = useRef(new LoremasterService());
@@ -36,33 +35,17 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedChars = localStorage.getItem(STORAGE_KEY_CHARACTERS);
     const savedState = localStorage.getItem(STORAGE_KEY_GAMESTATE);
-
-    if (savedChars) {
-      try {
-        const parsed = JSON.parse(savedChars);
-        setCharacters(parsed);
-        if (parsed.length > 0) setSelectedCharId(parsed[0].id);
-      } catch (e) { console.error(e); }
-    }
-
-    if (savedState) {
-      try { setGameState(JSON.parse(savedState)); } catch (e) { console.error(e); }
-    }
-    
+    if (savedChars) try { setCharacters(JSON.parse(savedChars)); } catch (e) {}
+    if (savedState) try { setGameState(JSON.parse(savedState)); } catch (e) {}
     setIsInitialized(true);
   }, []);
 
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem(STORAGE_KEY_CHARACTERS, JSON.stringify(characters));
-    }
-  }, [characters, isInitialized]);
-
-  useEffect(() => {
-    if (isInitialized) {
       localStorage.setItem(STORAGE_KEY_GAMESTATE, JSON.stringify(gameState));
     }
-  }, [gameState, isInitialized]);
+  }, [characters, gameState, isInitialized]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,22 +76,17 @@ const App: React.FC = () => {
     if (!selectedCharId) setSelectedCharId(newChar.id);
   };
 
-  const updateCharacter = (updated: Character) => {
-    setCharacters(characters.map(c => c.id === updated.id ? updated : c));
-  };
-
-  const removeCharacter = (id: string) => {
-    setCharacters(characters.filter(c => c.id !== id));
-  };
+  const updateCharacter = (updated: Character) => setCharacters(characters.map(c => c.id === updated.id ? updated : c));
+  const removeCharacter = (id: string) => setCharacters(characters.filter(c => c.id !== id));
 
   const handleSend = async (customText?: string, isRoll = false) => {
     const textToSend = customText || input;
     if (!textToSend.trim() || loading) return;
     
     const userMsg: Message = { role: 'user', text: textToSend, timestamp: Date.now(), isRoll };
-    const newHistory = [...gameState.history, userMsg];
+    const updatedHistory = [...gameState.history, userMsg];
     
-    setGameState(prev => ({ ...prev, history: newHistory }));
+    setGameState(prev => ({ ...prev, history: updatedHistory }));
     setInput('');
     setLoading(true);
 
@@ -117,16 +95,15 @@ const App: React.FC = () => {
         textToSend, 
         characters, 
         gameState, 
-        gameState.history // Enviamos o histórico antes da nova mensagem do usuário (ou a IA concatena)
+        updatedHistory
       );
       
       const modelMsg: Message = { role: 'model', text: response, timestamp: Date.now() };
       setGameState(prev => ({ ...prev, history: [...prev.history, modelMsg] }));
     } catch (error: any) {
-      console.error("Erro completo:", error);
       const errorMsg: Message = { 
         role: 'model', 
-        text: `As vozes de Arnor silenciaram... (Erro: ${error.message || 'Falha na conexão'}). Verifique sua API Key no painel da Vercel.`, 
+        text: `⚠️ MENSAGEM DO SISTEMA: ${error.message || 'Falha na conexão com Arnor.'}`, 
         timestamp: Date.now() 
       };
       setGameState(prev => ({ ...prev, history: [...prev.history, errorMsg] }));
@@ -138,10 +115,9 @@ const App: React.FC = () => {
   const executeRoll = () => {
     const char = characters.find(c => c.id === selectedCharId);
     if (!char || diceValue === '') return;
-    const skillInfo = SKILLS.find(s => s.name === selectedSkill);
-    const total = (diceValue as number) + Math.floor((char.stats[skillInfo?.stat as keyof typeof char.stats] - 10) / 2);
-    
-    handleSend(`[TESTE] ${char.name} rolou ${selectedSkill}: d20(${diceValue}) = ${total}`, true);
+    const skill = SKILLS.find(s => s.name === selectedSkill);
+    const mod = Math.floor((char.stats[skill?.stat as keyof typeof char.stats] - 10) / 2);
+    handleSend(`[TESTE] ${char.name} rolou ${selectedSkill}: ${diceValue} + ${mod} = ${(diceValue as number) + mod}`, true);
     setDiceValue('');
     setShowRollPanel(false);
   };
@@ -149,105 +125,136 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#050a05] text-sm lg:text-base overflow-hidden">
       
-      {/* Mobile Sidebar Toggle & Header */}
+      {/* Header Mobile */}
       <header className="h-14 lg:h-20 border-b border-emerald-950 flex items-center px-4 justify-between bg-[#040804] z-20 shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowSidebar(true)} className="lg:hidden text-2xl">📜</button>
-          <div className="w-8 h-8 rounded-full bg-black border border-emerald-900 flex items-center justify-center text-red-600 text-lg">👁️</div>
-          <h1 className="font-cinzel text-emerald-400 text-xs lg:text-xl tracking-tighter lg:tracking-widest uppercase">Sussurro de Arnor</h1>
+          <button onClick={() => setShowSidebar(true)} className="lg:hidden p-1 text-xl">📜</button>
+          <div className="w-8 h-8 rounded-full bg-black border border-emerald-900 flex items-center justify-center text-red-600 text-lg shadow-[0_0_10px_rgba(220,38,38,0.2)]">👁️</div>
+          <h1 className="font-cinzel text-emerald-400 text-xs lg:text-lg tracking-widest font-bold">ARNOR</h1>
         </div>
-        <button onClick={() => setShowRollPanel(!showRollPanel)} className="bg-emerald-900/30 border border-emerald-500/50 px-3 py-1 rounded-full text-emerald-400 text-[10px] lg:text-sm font-medieval flex items-center gap-1">
-          {DICE_SVG} <span>TESTE</span>
+        <button onClick={() => setShowRollPanel(true)} className="bg-emerald-900/30 border border-emerald-500/50 px-3 py-1 rounded-full text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+          {DICE_SVG} TESTE
         </button>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
+        
+        {/* Sidebar Backdrop Mobile */}
+        {showSidebar && <div className="fixed inset-0 bg-black/70 z-30 lg:hidden" onClick={() => setShowSidebar(false)} />}
+
         {/* Sidebar */}
         <div className={`
-          absolute lg:relative inset-y-0 left-0 w-72 lg:w-96 bg-[#081108] border-r border-emerald-950 z-30 transform transition-transform duration-300
+          absolute lg:relative inset-y-0 left-0 w-72 lg:w-96 bg-[#081108] border-r border-emerald-950 z-40 transform transition-transform duration-300 ease-in-out
           ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           flex flex-col p-4
         `}>
-          <div className="flex justify-between items-center mb-4 lg:hidden">
-            <span className="font-cinzel text-emerald-500">Companhia</span>
-            <button onClick={() => setShowSidebar(false)} className="text-emerald-500">✕</button>
+          <div className="flex justify-between items-center mb-6 lg:hidden">
+            <span className="font-cinzel text-emerald-500 font-bold">Companhia</span>
+            <button onClick={() => setShowSidebar(false)} className="text-emerald-500 text-xl">✕</button>
           </div>
           
-          <div className="flex gap-2 mb-4">
-             <button onClick={() => setSidebarTab('Heroes')} className={`flex-1 py-1 text-[10px] rounded border ${sidebarTab === 'Heroes' ? 'bg-emerald-900/40 border-emerald-500' : 'border-emerald-900/10'}`}>HERÓIS</button>
-             <button onClick={() => setSidebarTab('NPCs')} className={`flex-1 py-1 text-[10px] rounded border ${sidebarTab === 'NPCs' ? 'bg-gray-900/40 border-gray-500' : 'border-emerald-900/10'}`}>NPCs</button>
+          <div className="flex gap-1 mb-4">
+             <button onClick={() => setSidebarTab('Heroes')} className={`flex-1 py-1.5 text-[9px] font-bold rounded ${sidebarTab === 'Heroes' ? 'bg-emerald-900 text-emerald-100 border border-emerald-500' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>HERÓIS</button>
+             <button onClick={() => setSidebarTab('NPCs')} className={`flex-1 py-1.5 text-[9px] font-bold rounded ${sidebarTab === 'NPCs' ? 'bg-gray-800 text-gray-100 border border-gray-500' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>NPCs</button>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
             {characters.filter(c => sidebarTab === 'Heroes' ? !c.isNPC : c.isNPC).map(char => (
               <CharacterCard key={char.id} character={char} onUpdate={updateCharacter} onRemove={removeCharacter} />
             ))}
-            <button onClick={() => addCharacter(sidebarTab === 'NPCs')} className="w-full py-2 border-2 border-dashed border-emerald-900/30 rounded-lg text-emerald-900 text-xs font-bold hover:bg-emerald-900/5 transition">
-              + Adicionar {sidebarTab === 'Heroes' ? 'Herói' : 'NPC'}
-            </button>
+            <button onClick={() => addCharacter(sidebarTab === 'NPCs')} className="w-full py-2 border-2 border-dashed border-emerald-900/20 rounded-lg text-emerald-900 text-[10px] font-bold hover:bg-emerald-900/5">+ NOVO {sidebarTab === 'Heroes' ? 'HERÓI' : 'NPC'}</button>
           </div>
           
-          <div className="mt-4 p-2 bg-emerald-950/20 rounded border border-emerald-900/30 text-[10px]">
-             <div className="flex justify-between text-emerald-500 mb-1"><span>FELLOWSHIP</span> <input type="number" className="bg-transparent w-8 text-right outline-none" value={gameState.fellowshipPool} onChange={e => setGameState({...gameState, fellowshipPool: +e.target.value})} /></div>
-             <div className="flex justify-between text-red-500"><span>EYE AWARENESS</span> <input type="number" className="bg-transparent w-8 text-right outline-none" value={gameState.eyeAwareness} onChange={e => setGameState({...gameState, eyeAwareness: +e.target.value})} /></div>
+          <div className="mt-4 p-3 bg-black/40 rounded border border-emerald-900/30 text-[9px] space-y-2">
+             <div className="flex justify-between items-center">
+               <span className="text-emerald-600 font-bold uppercase tracking-wider">Fellowship</span>
+               <input type="number" className="bg-transparent w-8 text-right font-bold outline-none text-emerald-400" value={gameState.fellowshipPool} onChange={e => setGameState({...gameState, fellowshipPool: +e.target.value})} />
+             </div>
+             <div className="flex justify-between items-center">
+               <span className="text-red-700 font-bold uppercase tracking-wider">Eye Awareness</span>
+               <input type="number" className="bg-transparent w-8 text-right font-bold outline-none text-red-500" value={gameState.eyeAwareness} onChange={e => setGameState({...gameState, eyeAwareness: +e.target.value})} />
+             </div>
           </div>
         </div>
 
-        {/* Chat */}
-        <main className="flex-1 flex flex-col bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
+        {/* Chat Area */}
+        <main className="flex-1 flex flex-col relative bg-[#050805]">
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5 scrollbar-hide">
             {gameState.history.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center opacity-10 text-center pointer-events-none">
-                <div className="text-6xl lg:text-9xl font-cinzel text-emerald-900 mb-4">ARNOR</div>
-                <p className="italic text-emerald-800">"Nem tudo que é ouro brilha, nem todos os que vagam estão perdidos..."</p>
+              <div className="h-full flex flex-col items-center justify-center opacity-10 text-center select-none">
+                <div className="text-7xl lg:text-9xl font-cinzel text-emerald-900">ARNOR</div>
+                <p className="max-w-xs italic text-emerald-800 text-sm lg:text-base mt-2">"Onde agora estão o cavalo e o cavaleiro? Onde está a buzina que soprava?"</p>
               </div>
             )}
             {gameState.history.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[90%] lg:max-w-[80%] p-3 lg:p-5 rounded-lg shadow-xl ${
-                  msg.role === 'user' ? 'bg-[#0c1a0c] border border-emerald-900 text-emerald-100' : 'parchment border-2 border-emerald-800/30 text-emerald-950'
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                <div className={`max-w-[92%] lg:max-w-[80%] p-4 rounded-xl shadow-2xl ${
+                  msg.role === 'user' 
+                    ? (msg.isRoll ? 'bg-[#0a200a] border-2 border-emerald-500/30 text-emerald-200' : 'bg-[#0c140c] border border-emerald-900 text-emerald-100') 
+                    : 'parchment border-2 border-emerald-800/40 text-emerald-950'
                 }`}>
                   <div className="whitespace-pre-wrap leading-relaxed font-serif text-sm lg:text-base">{msg.text}</div>
                 </div>
               </div>
             ))}
-            {loading && <div className="text-emerald-800 italic animate-pulse text-xs">O Loremaster consulta as estrelas...</div>}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-emerald-900/20 px-4 py-2 rounded-full border border-emerald-800/30 text-emerald-700 italic text-xs animate-pulse">
+                  O Loremaster tece o destino...
+                </div>
+              </div>
+            )}
             <div ref={chatEndRef} />
           </div>
 
-          <div className="p-4 bg-[#040804] border-t border-emerald-950">
-            <div className="max-w-4xl mx-auto flex gap-2">
+          {/* Input Area */}
+          <div className="p-3 lg:p-5 bg-[#040804] border-t border-emerald-950">
+            <div className="max-w-4xl mx-auto flex gap-2 items-end">
               <textarea 
                 value={input} 
                 onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Narração ou ação..."
-                className="flex-1 bg-[#0a140a] border border-emerald-900/40 rounded-xl p-3 text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-800 resize-none h-14 lg:h-20 text-sm"
+                rows={1}
+                className="flex-1 bg-[#0a140a] border border-emerald-900/40 rounded-2xl p-3 text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-700 resize-none min-h-[50px] max-h-[150px] text-sm lg:text-base"
               />
-              <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-emerald-800 text-white w-14 lg:w-20 rounded-xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-20 transition-all">
+              <button 
+                onClick={() => handleSend()} 
+                disabled={loading || !input.trim()} 
+                className="bg-emerald-800 text-white w-12 h-12 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-10 transition-all shrink-0 shadow-lg"
+              >
                 <span className="text-xl">📜</span>
               </button>
             </div>
           </div>
         </main>
 
-        {/* Modal Rolar Dados */}
+        {/* Modal Dados Mobile-First */}
         {showRollPanel && (
-          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-            <div className="parchment w-full max-w-sm p-6 rounded-lg border-4 border-double border-emerald-900">
-              <h3 className="font-cinzel text-center border-b border-emerald-900/20 mb-4 font-bold">LANÇAR DESAFIO</h3>
-              <div className="space-y-4">
-                <select className="w-full bg-white/50 border border-emerald-900/30 rounded p-2" value={selectedCharId} onChange={e => setSelectedCharId(e.target.value)}>
-                  {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <select className="w-full bg-white/50 border border-emerald-900/30 rounded p-2" value={selectedSkill} onChange={e => setSelectedSkill(e.target.value)}>
-                  {SKILLS.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-                </select>
-                <div className="flex gap-4">
-                  <input type="number" placeholder="D20" className="flex-1 bg-white border border-emerald-900/30 rounded p-3 text-center text-xl font-bold" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
-                  <button onClick={executeRoll} disabled={!selectedCharId || diceValue === ''} className="bg-emerald-900 text-white px-6 rounded font-cinzel disabled:opacity-30">ROLAR</button>
+          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="parchment w-full max-w-sm p-6 rounded-2xl border-4 border-double border-emerald-900 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+              <h3 className="font-cinzel text-center border-b border-emerald-900/20 pb-2 mb-6 font-bold text-lg uppercase tracking-widest text-emerald-950">Lançar Desafio</h3>
+              <div className="space-y-5">
+                <div>
+                  <label className="text-[10px] font-bold text-emerald-900 uppercase ml-1">Herói</label>
+                  <select className="w-full bg-white/60 border border-emerald-900/30 rounded-lg p-2.5 text-sm" value={selectedCharId} onChange={e => setSelectedCharId(e.target.value)}>
+                    {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
                 </div>
-                <button onClick={() => setShowRollPanel(false)} className="w-full text-xs text-red-800 font-bold uppercase mt-4">Cancelar</button>
+                <div>
+                  <label className="text-[10px] font-bold text-emerald-900 uppercase ml-1">Perícia</label>
+                  <select className="w-full bg-white/60 border border-emerald-900/30 rounded-lg p-2.5 text-sm" value={selectedSkill} onChange={e => setSelectedSkill(e.target.value)}>
+                    {SKILLS.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-emerald-900 uppercase ml-1">Resultado D20</label>
+                    <input type="number" placeholder="0" className="w-full bg-white border-2 border-emerald-900/30 rounded-lg p-3 text-center text-2xl font-bold text-emerald-950 focus:border-emerald-600 outline-none" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
+                  </div>
+                  <button onClick={executeRoll} disabled={!selectedCharId || diceValue === ''} className="bg-emerald-900 text-white px-8 rounded-lg font-cinzel font-bold hover:bg-emerald-800 disabled:opacity-30 transition-all mt-5">ROLAR</button>
+                </div>
+                <button onClick={() => setShowRollPanel(false)} className="w-full text-xs text-red-800 font-bold uppercase mt-2 hover:underline">Fechar</button>
               </div>
             </div>
           </div>

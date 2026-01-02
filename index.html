@@ -2,15 +2,17 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Arnor Loremaster Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap" rel="stylesheet">
     <style>
       body {
-        background-color: #081108;
+        background-color: #050a05;
         color: #d1dbd1;
         font-family: 'IM Fell English', serif;
+        overflow: hidden;
+        overscroll-behavior: none;
       }
       .font-cinzel { font-family: 'Cinzel', serif; }
       .font-medieval { font-family: 'MedievalSharp', cursive; }
@@ -22,25 +24,16 @@
       }
       .scrollbar-hide::-webkit-scrollbar { display: none; }
       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      
-      @keyframes dice-glow {
-        0% { box-shadow: 0 0 0px rgba(16, 185, 129, 0); transform: scale(1); }
-        50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); transform: scale(1.02); border-color: #10b981; }
-        100% { box-shadow: 0 0 0px rgba(16, 185, 129, 0); transform: scale(1); }
-      }
-      .animate-dice-roll {
-        animation: dice-glow 1.5s ease-out forwards;
-      }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
