@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, GameState, Message, Culture, Calling, SKILLS, JourneyRole, StoryModule } from './types';
+import { Character, GameState, Message, Culture, Calling, SKILLS, JourneyRole, StoryModule, StoryChapter } from './types';
 import { LoremasterService } from './services/geminiService';
 import { CharacterCard } from './components/CharacterCard';
 import { DICE_SVG, STORY_MODULES } from './constants';
@@ -11,6 +11,7 @@ const STORAGE_KEY_GAMESTATE = 'arnor_loremaster_gamestate';
 const App: React.FC = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'Heroes' | 'NPCs' | 'Legends'>('Heroes');
+  const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     currentYear: 2965,
     season: 'Spring',
@@ -18,7 +19,8 @@ const App: React.FC = () => {
     fellowshipPool: 0,
     eyeAwareness: 0,
     history: [],
-    activeStoryId: undefined
+    activeStoryId: undefined,
+    activeChapterId: undefined
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,12 +57,17 @@ const App: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.history, loading]);
 
-  const startStory = async (story: StoryModule) => {
+  const startStoryChapter = async (story: StoryModule, chapter: StoryChapter) => {
     loremaster.current.stopSpeaking();
     setIsSpeaking(false);
     setPlayingMessageIndex(null);
-    setGameState(prev => ({ ...prev, activeStoryId: story.id, history: [] }));
-    handleSend(`Saudações, Escriba. Iniciemos a lenda: "${story.title}". Narre o início da nossa jornada.`);
+    setGameState(prev => ({ 
+      ...prev, 
+      activeStoryId: story.id, 
+      activeChapterId: chapter.id,
+      history: [] 
+    }));
+    handleSend(`Escriba, narre o início do capítulo "${chapter.title}" da lenda "${story.title}". Contexto: ${chapter.description}`);
     setShowSidebar(false);
   };
 
@@ -133,12 +140,11 @@ const App: React.FC = () => {
     if (!char || diceValue === '') return;
     const skill = SKILLS.find(s => s.name === selectedSkill);
     const mod = Math.floor((char.stats[skill?.stat as keyof typeof char.stats] - 10) / 2);
-    handleSend(`[ROLAGEM] ${char.name} realizou um teste de ${selectedSkill}: Resultado ${diceValue} + Modificador ${mod} = ${(diceValue as number) + mod}`, true);
+    handleSend(`[ROLAGEM] ${char.name} realiza teste de ${selectedSkill}: ${diceValue} + ${mod} = ${(diceValue as number) + mod}`, true);
     setDiceValue('');
     setShowRollPanel(false);
   };
 
-  // Fixed the error: Cannot find name 'addCharacter'
   const addCharacter = (isNPC: boolean) => {
     const newChar: Character = {
       id: Math.random().toString(36).substr(2, 9),
@@ -149,14 +155,7 @@ const App: React.FC = () => {
       isNPC,
       isWeary: false,
       journeyRole: JourneyRole.NONE,
-      stats: {
-        strength: 10,
-        dexterity: 10,
-        constitution: 10,
-        intelligence: 10,
-        wisdom: 10,
-        charisma: 10
-      },
+      stats: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
       hp: { current: 20, max: 20 },
       hope: { current: 10, max: 10 },
       shadow: { points: 0, scars: 0 },
@@ -208,7 +207,7 @@ const App: React.FC = () => {
 
         {/* Sidebar Content */}
         <aside className={`
-          absolute lg:relative inset-y-0 left-0 w-[85%] max-w-[320px] lg:w-[350px] bg-[#081108] border-r border-emerald-950/30 z-50 transform transition-transform duration-300 ease-in-out
+          absolute lg:relative inset-y-0 left-0 w-[85%] max-w-[320px] lg:w-[380px] bg-[#081108] border-r border-emerald-950/30 z-50 transform transition-transform duration-300 ease-in-out
           ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           flex flex-col shadow-2xl
         `}>
@@ -228,19 +227,40 @@ const App: React.FC = () => {
               {sidebarTab === 'Legends' ? (
                 <div className="space-y-4">
                   {STORY_MODULES.map(story => (
-                    <div key={story.id} className={`parchment p-4 rounded-xl border-2 transition-all group ${gameState.activeStoryId === story.id ? 'border-amber-600 shadow-[0_0_20px_rgba(217,119,6,0.2)]' : 'border-amber-900/20 hover:border-amber-800/40'}`}>
-                      <h4 className="font-cinzel font-bold text-amber-950 text-base leading-tight">{story.title}</h4>
-                      <p className="text-[11px] text-amber-900/80 mt-2 italic leading-relaxed">{story.description}</p>
+                    <div key={story.id} className={`parchment overflow-hidden rounded-xl border-2 transition-all group ${gameState.activeStoryId === story.id ? 'border-amber-600 shadow-lg' : 'border-amber-900/20 hover:border-amber-800/40'}`}>
                       <button 
-                        onClick={() => startStory(story)}
-                        className={`w-full mt-4 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
-                          gameState.activeStoryId === story.id 
-                          ? 'bg-amber-950 text-amber-400 cursor-default' 
-                          : 'bg-amber-800/20 text-amber-900 hover:bg-amber-800/40 border border-amber-900/30 active:scale-95'
-                        }`}
+                        onClick={() => setExpandedStoryId(expandedStoryId === story.id ? null : story.id)}
+                        className="w-full p-4 text-left flex justify-between items-center"
                       >
-                        {gameState.activeStoryId === story.id ? 'Lenda Atual' : 'Iniciar Narração'}
+                        <div>
+                          <h4 className="font-cinzel font-bold text-amber-950 text-base leading-tight">{story.title}</h4>
+                          <p className="text-[10px] text-amber-900/70 mt-1 italic leading-relaxed">{story.description}</p>
+                        </div>
+                        <span className="text-amber-900/40">{expandedStoryId === story.id ? '▲' : '▼'}</span>
                       </button>
+                      
+                      {expandedStoryId === story.id && (
+                        <div className="bg-amber-950/5 border-t border-amber-900/10 p-3 space-y-2">
+                          <p className="text-[9px] font-bold text-amber-900/60 uppercase tracking-widest mb-1 px-1">Índice da Lenda</p>
+                          {story.chapters.map(chapter => (
+                            <button
+                              key={chapter.id}
+                              onClick={() => startStoryChapter(story, chapter)}
+                              className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                gameState.activeChapterId === chapter.id
+                                ? 'bg-amber-900 text-amber-100 border-amber-500'
+                                : 'bg-white/40 border-amber-900/10 hover:border-amber-900/40'
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-[11px] font-cinzel">{chapter.title}</span>
+                                {gameState.activeChapterId === chapter.id && <span className="text-[10px] animate-pulse">●</span>}
+                              </div>
+                              <p className="text-[9px] opacity-70 leading-tight mt-1">{chapter.description}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -276,8 +296,8 @@ const App: React.FC = () => {
               <div className="h-full flex flex-col items-center justify-center opacity-10 text-center select-none animate-pulse px-6">
                 <div className="text-6xl lg:text-9xl font-cinzel text-emerald-900 tracking-tighter">ARNOR</div>
                 <p className="max-w-md italic text-emerald-800 text-sm lg:text-xl mt-6 font-serif leading-relaxed">
-                  {gameState.activeStoryId 
-                    ? `A lenda de "${STORY_MODULES.find(s => s.id === gameState.activeStoryId)?.title}" aguarda seus primeiros passos...`
+                  {gameState.activeChapterId 
+                    ? `Preparando o capítulo "${STORY_MODULES.find(s => s.id === gameState.activeStoryId)?.chapters.find(c => c.id === gameState.activeChapterId)?.title}"...`
                     : '"O mundo mudou. Eu sinto isso na água. Eu sinto na terra. Eu sinto no ar."'}
                 </p>
               </div>

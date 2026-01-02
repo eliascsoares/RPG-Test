@@ -27,11 +27,18 @@ export enum JourneyRole {
   LOOKOUT = 'Vigia'
 }
 
+export interface StoryChapter {
+  id: string;
+  title: string;
+  description: string;
+}
+
 export interface StoryModule {
   id: string;
   title: string;
   description: string;
   context: string;
+  chapters: StoryChapter[];
 }
 
 export interface Attack {
@@ -78,6 +85,7 @@ export interface GameState {
   eyeAwareness: number;
   history: Message[];
   activeStoryId?: string;
+  activeChapterId?: string;
 }
 
 export interface Message {

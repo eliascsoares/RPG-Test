@@ -55,7 +55,15 @@ export class LoremasterService {
     `).join('\n');
 
     const activeStory = STORY_MODULES.find(s => s.id === gameState.activeStoryId);
-    const storyContext = activeStory ? `\n--- Lenda Ativa: ${activeStory.title} ---\n${activeStory.description}\nContexto: ${activeStory.context}` : '';
+    let storyContext = '';
+    
+    if (activeStory) {
+      const activeChapter = activeStory.chapters.find(c => c.id === gameState.activeChapterId);
+      storyContext = `\n--- LENDA ATIVA: ${activeStory.title} ---\n${activeStory.description}\nCONTEXTO: ${activeStory.context}`;
+      if (activeChapter) {
+        storyContext += `\nCAPÍTULO ATUAL: ${activeChapter.title}\nOBJETIVO: ${activeChapter.description}`;
+      }
+    }
 
     return `
       ANO: ${gameState.currentYear} | FELLOWSHIP: ${gameState.fellowshipPool} | OLHO: ${gameState.eyeAwareness}
@@ -66,7 +74,6 @@ export class LoremasterService {
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
-    // Correctly initialize GoogleGenAI using named parameters and directly from process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
@@ -88,7 +95,6 @@ export class LoremasterService {
         }
       });
 
-      // Extract generated text directly from response.text property
       return response.text || "O Escriba permaneceu em silêncio...";
     } catch (error: any) {
       console.error("Erro Gemini:", error);
@@ -97,7 +103,6 @@ export class LoremasterService {
   }
 
   async speak(text: string, onEnd?: () => void) {
-    // Correctly initialize GoogleGenAI using named parameters and directly from process.env.API_KEY
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     this.stopSpeaking();
 
