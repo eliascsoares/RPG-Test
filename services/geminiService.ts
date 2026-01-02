@@ -4,30 +4,24 @@ import { Character, GameState, Message } from "../types";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
 export class LoremasterService {
-  private ai: GoogleGenAI;
+  constructor() {}
 
-  constructor() {
-    // No Vercel, definimos API_KEY nas Environment Variables
-    const key = process.env.API_KEY as string;
-    this.ai = new GoogleGenAI({ apiKey: key });
-  }
-
-  private constructContext(party: Character[], gameState: GameState): string {
+  private constructPartyContext(party: Character[], gameState: GameState): string {
     const partyDetails = party.map(p => `
       - [${p.isNPC ? 'NPC' : 'PC'}] ${p.name}
         Papel na Jornada: ${p.journeyRole}
         Condição: ${p.isWeary ? 'WEARY (Esgotado)' : 'Normal'}
         Esperança: ${p.hope.current}/${p.hope.max}
         Sombra: ${p.shadow.points} (Scars: ${p.shadow.scars})
-        Stats: STR ${p.stats.strength} DEX ${p.stats.dexterity} CON ${p.stats.constitution} INT ${p.stats.intelligence} WIS ${p.stats.wisdom} CHA ${p.stats.charisma}
+        Atributos: FOR ${p.stats.strength} DES ${p.stats.dexterity} CON ${p.stats.constitution} INT ${p.stats.intelligence} SAB ${p.stats.wisdom} CAR ${p.stats.charisma}
     `).join('\n');
 
     return `
-      --- SITUAÇÃO DO MUNDO ---
+      --- ESTADO DO MUNDO ---
       Ano: ${gameState.currentYear} T.E. | Estação: ${gameState.season}
       Localização: ${gameState.location}
-      Reserva de Companheirismo (Fellowship Pool): ${gameState.fellowshipPool} pontos
-      Nível de Vigilância (Eye Awareness): ${gameState.eyeAwareness}
+      Fellowship Pool: ${gameState.fellowshipPool}
+      Eye Awareness: ${gameState.eyeAwareness}
 
       --- COMPANHIA ---
       ${partyDetails}
@@ -35,27 +29,36 @@ export class LoremasterService {
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
-    const context = this.constructContext(party, gameState);
-    
-    // Recriamos a instância para garantir que pegamos a chave mais atual do ambiente
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    // Inicialização dentro do método para garantir que usa a chave do processo atual
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const context = this.constructPartyContext(party, gameState);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: [
-        { role: 'user', parts: [{ text: `SYSTEM_INSTRUCTION:\n${SYSTEM_INSTRUCTION}\n\nAMBIENTE_E_DADOS:\n${context}` }] },
-        ...history.map(m => ({
-          role: m.role as 'user' | 'model',
-          parts: [{ text: m.text }]
-        })),
-        { role: 'user', parts: [{ text: userInput }] }
-      ],
-      config: {
-        temperature: 0.75,
-        topP: 0.9,
+    // Mapeamos o histórico garantindo a alternância correta. 
+    // Filtramos apenas mensagens de texto reais para o histórico do Gemini.
+    const chatHistory = history.map(m => ({
+      role: m.role as 'user' | 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: [...chatHistory, { role: 'user', parts: [{ text: userInput }] }],
+        config: {
+          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nCONTEXTO ATUAL DA PARTIDA:\n${context}`,
+          temperature: 0.8,
+          topP: 0.95,
+        }
+      });
+
+      if (!response || !response.text) {
+        throw new Error("Resposta vazia da API");
       }
-    });
 
-    return response.text;
+      return response.text;
+    } catch (error) {
+      console.error("Erro na API Gemini:", error);
+      throw error;
+    }
   }
 }
