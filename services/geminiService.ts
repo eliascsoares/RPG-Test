@@ -7,8 +7,8 @@ export class LoremasterService {
   private ai: GoogleGenAI;
 
   constructor() {
-    // Tenta ler do process.env (Vercel) ou de uma variável injetada pelo Vite
-    const key = (process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY) as string;
+    // No Vercel, definimos API_KEY nas Environment Variables
+    const key = process.env.API_KEY as string;
     this.ai = new GoogleGenAI({ apiKey: key });
   }
 
@@ -37,12 +37,15 @@ export class LoremasterService {
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
     const context = this.constructContext(party, gameState);
     
-    const response = await this.ai.models.generateContent({
+    // Recriamos a instância para garantir que pegamos a chave mais atual do ambiente
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+    const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [
         { role: 'user', parts: [{ text: `SYSTEM_INSTRUCTION:\n${SYSTEM_INSTRUCTION}\n\nAMBIENTE_E_DADOS:\n${context}` }] },
         ...history.map(m => ({
-          role: m.role,
+          role: m.role as 'user' | 'model',
           parts: [{ text: m.text }]
         })),
         { role: 'user', parts: [{ text: userInput }] }
