@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { StoryModule } from './types';
 
 export const SYSTEM_INSTRUCTION = `
 Você é o "Escriba das Sombras", um Mestre de Jogo (Loremaster) erudito e imersivo para Lord of the Rings 5E.
@@ -16,11 +17,32 @@ DIRETRIZES DE ALTA FANTASIA:
 4. MECÂNICA ORGÂNICA: Integre as regras da 5E (CDs, Testes, Condições) naturalmente na fala. Ex: "A névoa exige um teste de Sobrevivência (CD 14), ou os corações dos heróis serão tomados pelo desespero e cansaço (Fadiga)".
 5. GANCHOS DE DECISÃO: Termine cada intervenção principal com uma pergunta ou situação que exija uma escolha moral ou tática difícil dos jogadores.
 
-CONTEXTO DE ARNOR:
-Lembre-se que você está em uma terra de realeza caída. Onde agora há mato, já houve tronos. Reflita a glória perdida e a esperança resiliente.
+SE UMA HISTÓRIA ESTIVER ATIVA:
+Siga estritamente o contexto e o tom desse módulo específico, garantindo que a narrativa se mantenha fiel ao título escolhido.
 
 Responda sempre em Português (Brasil). Seja o autor de uma nova lenda, não apenas um narrador de jogo.
 `;
+
+export const STORY_MODULES: StoryModule[] = [
+  {
+    id: 'angmar_shadow',
+    title: 'A Sombra de Angmar',
+    description: 'Um mal antigo desperta nas ruínas geladas do norte. Sussurros de um novo Rei-Bruxo ecoam entre os guardiões.',
+    context: 'Contexto: Arnor, Ruínas de Fornost, Inverno rigoroso, presença de Espectros e Orcs da Montanha.'
+  },
+  {
+    id: 'bree_mystery',
+    title: 'O Mistério de Bri',
+    description: 'Estranhos viajantes chegam ao Pônei Saltitante. Desaparecimentos e sombras nas matas de Chetwode intrigam os locais.',
+    context: 'Contexto: Bri, Terras de ninguém, Homens de Bri, Hobbits, mistério urbano e rural, espiões de Saruman ou Sauron.'
+  },
+  {
+    id: 'moria_echoes',
+    title: 'Ecos de Khazad-dûm',
+    description: 'Uma expedição anã busca recuperar relíquias perdidas nos níveis superiores da Mina Escura. Mas nem tudo que dorme deve ser acordado.',
+    context: 'Contexto: Moria (Níveis Superiores), Anões de Durin, escuridão claustrofóbica, tambores nas profundezas.'
+  }
+];
 
 export const DICE_SVG = (
   <svg className="w-5 h-5 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

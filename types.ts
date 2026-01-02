@@ -27,6 +27,13 @@ export enum JourneyRole {
   LOOKOUT = 'Vigia'
 }
 
+export interface StoryModule {
+  id: string;
+  title: string;
+  description: string;
+  context: string;
+}
+
 export interface Attack {
   id: string;
   name: string;
@@ -42,7 +49,7 @@ export interface Character {
   calling: Calling;
   level: number;
   isNPC?: boolean;
-  isWeary?: boolean; // Estado Esgotado
+  isWeary?: boolean;
   journeyRole: JourneyRole;
   stats: {
     strength: number;
@@ -53,7 +60,7 @@ export interface Character {
     charisma: number;
   };
   hp: { current: number; max: number };
-  hope: { current: number; max: number }; // Recurso de Esperança
+  hope: { current: number; max: number };
   shadow: { points: number; scars: number };
   fatigue: number;
   experience: number;
@@ -67,9 +74,10 @@ export interface GameState {
   currentYear: number;
   season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
   location: string;
-  fellowshipPool: number; // Reserva de Companheirismo
+  fellowshipPool: number;
   eyeAwareness: number;
   history: Message[];
+  activeStoryId?: string;
 }
 
 export interface Message {

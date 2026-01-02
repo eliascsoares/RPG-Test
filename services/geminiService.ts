@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Modality } from "@google/genai";
-import { Character, GameState, Message } from "../types";
-import { SYSTEM_INSTRUCTION } from "../constants";
+import { Character, GameState, Message, StoryModule } from "../types";
+import { SYSTEM_INSTRUCTION, STORY_MODULES } from "../constants";
 
 export class LoremasterService {
   private audioContext: AudioContext | null = null;
@@ -45,9 +45,12 @@ export class LoremasterService {
         Pontos de Sombra: ${p.shadow.points}
     `).join('\n');
 
+    const activeStory = STORY_MODULES.find(s => s.id === gameState.activeStoryId);
+    const storyContext = activeStory ? `\n--- HISTÓRIA ATIVA: ${activeStory.title} ---\n${activeStory.context}\n${activeStory.description}` : '';
+
     return `
       ANO: ${gameState.currentYear} | FELLOWSHIP: ${gameState.fellowshipPool} | OLHO: ${gameState.eyeAwareness}
-      LOCAL: ${gameState.location}
+      LOCAL: ${gameState.location}${storyContext}
       PERSONAGENS ATUAIS:
       ${partyDetails}
     `;
@@ -87,7 +90,6 @@ export class LoremasterService {
   async speak(text: string, onEnd?: () => void) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     
-    // Parar narração anterior se houver
     if (this.currentSource) {
       this.currentSource.stop();
       this.currentSource = null;
@@ -113,7 +115,6 @@ export class LoremasterService {
           this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         }
         
-        // Browsers bloqueiam áudio sem interação. Tentamos retomar.
         if (this.audioContext.state === 'suspended') {
           await this.audioContext.resume();
         }

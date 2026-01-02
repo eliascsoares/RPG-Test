@@ -1,23 +1,24 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, GameState, Message, Culture, Calling, SKILLS, JourneyRole } from './types';
+import { Character, GameState, Message, Culture, Calling, SKILLS, JourneyRole, StoryModule } from './types';
 import { LoremasterService } from './services/geminiService';
 import { CharacterCard } from './components/CharacterCard';
-import { DICE_SVG } from './constants';
+import { DICE_SVG, STORY_MODULES } from './constants';
 
 const STORAGE_KEY_CHARACTERS = 'arnor_loremaster_characters';
 const STORAGE_KEY_GAMESTATE = 'arnor_loremaster_gamestate';
 
 const App: React.FC = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [sidebarTab, setSidebarTab] = useState<'Heroes' | 'NPCs'>('Heroes');
+  const [sidebarTab, setSidebarTab] = useState<'Heroes' | 'NPCs' | 'Legends'>('Heroes');
   const [gameState, setGameState] = useState<GameState>({
     currentYear: 2965,
     season: 'Spring',
     location: 'Bree',
     fellowshipPool: 0,
     eyeAwareness: 0,
-    history: []
+    history: [],
+    activeStoryId: undefined
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,12 @@ const App: React.FC = () => {
 
   const updateCharacter = (updated: Character) => setCharacters(characters.map(c => c.id === updated.id ? updated : c));
   const removeCharacter = (id: string) => setCharacters(characters.filter(c => c.id !== id));
+
+  const startStory = async (story: StoryModule) => {
+    setGameState(prev => ({ ...prev, activeStoryId: story.id, history: [] }));
+    handleSend(`Por favor, inicie a narrativa da lenda: "${story.title}".`);
+    setShowSidebar(false);
+  };
 
   const handleManualSpeak = async (text: string, index: number) => {
     if (playingMessageIndex === index) {
@@ -202,20 +209,44 @@ const App: React.FC = () => {
           flex flex-col p-4
         `}>
           <div className="flex justify-between items-center mb-6 lg:hidden">
-            <span className="font-cinzel text-emerald-500 font-bold">Companhia</span>
+            <span className="font-cinzel text-emerald-500 font-bold">Menu</span>
             <button onClick={() => setShowSidebar(false)} className="text-emerald-500 text-xl">✕</button>
           </div>
           
           <div className="flex gap-1 mb-4">
-             <button onClick={() => setSidebarTab('Heroes')} className={`flex-1 py-1.5 text-[9px] font-bold rounded ${sidebarTab === 'Heroes' ? 'bg-emerald-900 text-emerald-100 border border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>HERÓIS</button>
-             <button onClick={() => setSidebarTab('NPCs')} className={`flex-1 py-1.5 text-[9px] font-bold rounded ${sidebarTab === 'NPCs' ? 'bg-gray-800 text-gray-100 border border-gray-500' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>NPCs</button>
+             <button onClick={() => setSidebarTab('Heroes')} className={`flex-1 py-1.5 text-[8px] font-bold rounded ${sidebarTab === 'Heroes' ? 'bg-emerald-900 text-emerald-100 border border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>HERÓIS</button>
+             <button onClick={() => setSidebarTab('NPCs')} className={`flex-1 py-1.5 text-[8px] font-bold rounded ${sidebarTab === 'NPCs' ? 'bg-gray-800 text-gray-100 border border-gray-500' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>NPCs</button>
+             <button onClick={() => setSidebarTab('Legends')} className={`flex-1 py-1.5 text-[8px] font-bold rounded ${sidebarTab === 'Legends' ? 'bg-amber-900/80 text-amber-100 border border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-transparent border border-emerald-900/40 text-emerald-900'}`}>LENDAS</button>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
-            {characters.filter(c => sidebarTab === 'Heroes' ? !c.isNPC : c.isNPC).map(char => (
-              <CharacterCard key={char.id} character={char} onUpdate={updateCharacter} onRemove={removeCharacter} />
-            ))}
-            <button onClick={() => addCharacter(sidebarTab === 'NPCs')} className="w-full py-2 border-2 border-dashed border-emerald-900/20 rounded-lg text-emerald-900 text-[10px] font-bold hover:bg-emerald-900/5 transition-all">+ NOVO {sidebarTab === 'Heroes' ? 'HERÓI' : 'NPC'}</button>
+            {sidebarTab === 'Legends' ? (
+              <div className="space-y-3">
+                {STORY_MODULES.map(story => (
+                  <div key={story.id} className={`parchment p-3 rounded-lg border-2 border-amber-900/30 transition-all ${gameState.activeStoryId === story.id ? 'ring-2 ring-amber-500 shadow-xl scale-[1.02]' : 'hover:border-amber-700/50'}`}>
+                    <h4 className="font-cinzel font-bold text-amber-950 text-sm">{story.title}</h4>
+                    <p className="text-[10px] text-amber-900/80 mt-1 italic leading-tight">{story.description}</p>
+                    <button 
+                      onClick={() => startStory(story)}
+                      className={`w-full mt-2 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        gameState.activeStoryId === story.id 
+                        ? 'bg-amber-950 text-amber-200' 
+                        : 'bg-amber-800/20 text-amber-900 hover:bg-amber-800/40 border border-amber-900/20'
+                      }`}
+                    >
+                      {gameState.activeStoryId === story.id ? 'Lenda Ativa' : 'Iniciar Narração'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {characters.filter(c => sidebarTab === 'Heroes' ? !c.isNPC : c.isNPC).map(char => (
+                  <CharacterCard key={char.id} character={char} onUpdate={updateCharacter} onRemove={removeCharacter} />
+                ))}
+                <button onClick={() => addCharacter(sidebarTab === 'NPCs')} className="w-full py-2 border-2 border-dashed border-emerald-900/20 rounded-lg text-emerald-900 text-[10px] font-bold hover:bg-emerald-900/5 transition-all">+ NOVO {sidebarTab === 'Heroes' ? 'HERÓI' : 'NPC'}</button>
+              </>
+            )}
           </div>
           
           <div className="mt-4 p-3 bg-black/40 rounded border border-emerald-900/30 text-[9px] space-y-2">
@@ -237,7 +268,9 @@ const App: React.FC = () => {
               <div className="h-full flex flex-col items-center justify-center opacity-10 text-center select-none animate-pulse">
                 <div className="text-7xl lg:text-9xl font-cinzel text-emerald-900 tracking-tighter">ARNOR</div>
                 <p className="max-w-md italic text-emerald-800 text-sm lg:text-xl mt-4 font-serif leading-relaxed">
-                  "O mundo mudou. Eu sinto isso na água. Eu sinto na terra. Eu sinto no ar."
+                  {gameState.activeStoryId 
+                    ? `Preparando a lenda: ${STORY_MODULES.find(s => s.id === gameState.activeStoryId)?.title}...`
+                    : '"O mundo mudou. Eu sinto isso na água. Eu sinto na terra. Eu sinto no ar."'}
                 </p>
               </div>
             )}
