@@ -66,13 +66,17 @@ export class LoremasterService {
   }
 
   async generateMap(location: string): Promise<string | null> {
+    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: [{
-          text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient elven/numenorean ruins. Elegant calligraphic labels in Westron style.`
-        }],
+        // Correcting contents to use a Content object with parts
+        contents: {
+          parts: [{
+            text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient elven/numenorean ruins. Elegant calligraphic labels in Westron style.`
+          }]
+        },
         config: {
           imageConfig: { aspectRatio: "16:9" }
         }
@@ -91,6 +95,7 @@ export class LoremasterService {
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
+    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
@@ -120,6 +125,7 @@ export class LoremasterService {
   }
 
   async speak(text: string, onEnd?: () => void) {
+    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     this.stopSpeaking();
 

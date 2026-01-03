@@ -49,7 +49,6 @@ export interface Attack {
   range: string;
 }
 
-// Added Message interface for chat history
 export interface Message {
   role: 'user' | 'model';
   text: string;
@@ -57,7 +56,6 @@ export interface Message {
   isRoll?: boolean;
 }
 
-// Added GameState interface for session management
 export interface GameState {
   currentYear: number;
   season: string;
@@ -75,18 +73,20 @@ export interface Character {
   culture: Culture;
   calling: Calling;
   level: number;
+  playerNames?: string;
+  experiencePoints: number;
+  distinctiveFeatures: string;
+  shadowPath: string;
   isNPC?: boolean;
   isWeary?: boolean;
-  journeyRole: JourneyRole;
   
-  // Novos campos da ficha oficial
+  // Stats do PDF
   inspiration: boolean;
   proficiencyBonus: number;
   armorClass: number;
   initiative: number;
   speed: string;
   passiveWisdom: number;
-  shadowPath: string;
   
   stats: {
     strength: number;
@@ -97,16 +97,34 @@ export interface Character {
     charisma: number;
   };
   
-  savingThrows: string[]; // Lista de stats com proficiência
+  savingThrows: string[]; 
   skillProficiencies: string[];
   
   hp: { current: number; max: number; temp: number };
+  // Hope resource used for tracking player fellowship/hope points
   hope: { current: number; max: number };
-  shadow: { score: number; scars: number; miserable: boolean; anguished: boolean };
+  hitDice: { current: number; max: string };
+  deathSaves: { successes: number; failures: number };
   
-  features: string[];
-  equipment: string[];
+  shadow: { 
+    score: number; 
+    scars: number; 
+    miserable: boolean; 
+    anguished: boolean 
+  };
+  
+  encumbrance: {
+    carriedWeight: number;
+    isEncumbered: boolean;
+    isHeavilyEncumbered: boolean;
+  };
+
+  toolsAndLanguages: string;
+  featuresTraitsVirtues: string;
+  equipment: string;
   attacks: Attack[];
+  journeyRole: JourneyRole;
+  fellowshipPoints: number;
 }
 
 export const SKILLS = [
@@ -114,19 +132,19 @@ export const SKILLS = [
   { name: 'Animal Handling', stat: 'wisdom' },
   { name: 'Athletics', stat: 'strength' },
   { name: 'Deception', stat: 'charisma' },
-  { name: 'Explore', stat: 'wisdom' }, // Específico LotR
-  { name: 'Hunting', stat: 'wisdom' },  // Específico LotR
+  { name: 'Explore', stat: 'wisdom' },
+  { name: 'Hunting', stat: 'wisdom' },
   { name: 'Insight', stat: 'wisdom' },
   { name: 'Intimidation', stat: 'charisma' },
   { name: 'Investigation', stat: 'intelligence' },
-  { name: 'Medicine', stat: 'intelligence' },
+  { name: 'Medicine', stat: 'wisdom' },
   { name: 'Nature', stat: 'intelligence' },
-  { name: 'Old Lore', stat: 'intelligence' }, // Específico LotR
+  { name: 'Old Lore', stat: 'intelligence' },
   { name: 'Perception', stat: 'wisdom' },
   { name: 'Performance', stat: 'charisma' },
   { name: 'Persuasion', stat: 'charisma' },
-  { name: 'Riddle', stat: 'intelligence' },   // Específico LotR
+  { name: 'Riddle', stat: 'intelligence' },
   { name: 'Sleight of Hand', stat: 'dexterity' },
   { name: 'Stealth', stat: 'dexterity' },
-  { name: 'Travel', stat: 'wisdom' }         // Específico LotR
+  { name: 'Travel', stat: 'wisdom' }
 ];

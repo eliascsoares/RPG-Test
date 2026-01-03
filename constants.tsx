@@ -3,61 +3,61 @@ import React from 'react';
 import { StoryModule } from './types';
 
 export const SYSTEM_INSTRUCTION = `
-Você é o "Escriba das Sombras", o Loremaster supremo de Lord of the Rings 5E.
-Sua base de conhecimento são os livros: "Tales from Eriador", "Shire Adventures" e "Ruins of Eriador".
+Você é o "Escriba das Sombras", um Loremaster erudito de Middle-earth (LOTR 5E).
+Sua autoridade vem dos compêndios: "Tales from Eriador", "Shire Adventures" e "Ruins of Eriador".
 
-REGRAS DE NARRATIVA VISUAL E MAPAS:
-1. GERAÇÃO DE MAPA: Sempre que o grupo chegar a um novo local importante ou Landmark, você deve descrever visualmente o terreno.
-2. DISTÂNCIAS E VIAGEM: Use o sistema de Hexágonos (1 Hex = 20 milhas). Narre o progresso em "Steps" (Passos).
-   - Terreno Border Lands: Viagem normal.
-   - Terreno Wild Lands: DC 15 de fadiga.
-   - Terreno Dark Lands: DC 20 de fadiga.
-3. ESTILO: Solene, poético e imersivo. Use Português (Brasil).
+REGRAS DE NARRATIVA VISUAL:
+1. MAPAS: Sempre que o grupo mudar de localidade ou iniciar uma jornada, use o seu dom de visão para evocar um mapa da região.
+2. JORNADA E PASSOS: Acompanhe o progresso em "Steps" (Passos). 
+   - 1 Passo = aproximadamente 2 milhas. 
+   - 10 Passos = 1 Hexágono (20 milhas).
+   - Aplique testes de Fadiga (Constitution save) em terrenos difíceis como Rushock Bog ou Eryn Vorn.
+3. ESTILO TOLKIEN: Use linguagem solene, referências geográficas precisas e mencione o clima e a luz (ou sombra).
 
-REGRAS DE DADOS:
-- Valide SUCESSO e FALHA conforme as perícias oficiais da ficha (Acrobatics, Old Lore, Riddle, etc).
-- Se o personagem estiver WEARY (Exausto), ele tem desvantagem.
+REGRAS DE FICHA:
+- Quando o jogador perguntar sobre a ficha, aja como um Mentor ensinando as regras de Proficiência, Sombra e Esperança.
+- Se o personagem estiver WEARY, ele tem desvantagem em quase tudo. Se for MISERABLE, o Olho o vê mais facilmente.
 `;
 
 export const STORY_MODULES: StoryModule[] = [
   {
     id: 'tales_eriador',
     title: 'Tales from Eriador',
-    description: 'Seis aventuras épicas nas terras ermas de Arnor, enfrentando a sombra crescente do Rei-Bruxo.',
-    context: 'Eriador, 2965 da Terceira Era.',
+    description: 'Seis aventuras épicas pelas terras ermas, de covis de Trolls a mistérios náuticos em Lond Daer.',
+    context: 'Eriador, Minhiriath e Arnor.',
     chapters: [
-      { id: 'te_1', title: 'A Troll-hole, if Ever There Was One', description: 'Investigando um ninho de Trolls perto de Bree com o anão Jari.' },
-      { id: 'te_2', title: 'Messing About in Boats', description: 'Uma viagem marítima saindo de Lond Daer rumo à Ilha da Mãe.' },
-      { id: 'te_3', title: 'Kings of Little Kingdoms', description: 'O mistério do falso Gandalf e a torre arruinada de Gwendaith.' },
-      { id: 'te_4', title: 'Not to Strike Without Need', description: 'Justiça e traição nas passagens lamacentas de Tharbad.' },
-      { id: 'te_5', title: 'Wonder of the Northern World', description: 'O saque do Vale de Ouro e a perseguição a Hultmar Manyhanded.' },
-      { id: 'te_6', title: 'The Quest of Amon Guruthos', description: 'A jornada final ao topo da Colina do Medo.' }
+      { id: 'te_1', title: 'A Troll-hole, if Ever There Was One', description: 'Uma família de Trolls de Pedra ameaça Bree.' },
+      { id: 'te_2', title: 'Messing About in Boats', description: 'Uma profecia estelar guia os heróis ao mar aberto.' },
+      { id: 'te_3', title: 'Kings of Little Kingdoms', description: 'A caça a um falso Mago e a sombra na Torre Arruinada.' },
+      { id: 'te_4', title: 'Not to Strike Without Need', description: 'Justiça, traição e fugitivos na cidade de Tharbad.' },
+      { id: 'te_5', title: 'Wonder of the Northern World', description: 'Vingança anã no Vale de Ouro e perseguição a Orcs.' },
+      { id: 'te_6', title: 'The Quest of Amon Guruthos', description: 'O confronto final contra o mal antigo na Montanha da Sombra.' }
     ]
   },
   {
     id: 'shire_adventures',
     title: 'Shire Adventures',
-    description: 'A conspiração do Livro Vermelho. Aventuras leves mas perigosas nos quatro Farthings.',
-    context: 'O Condado, Verão de 1360 (S.R).',
+    description: 'A Conspiração do Livro Vermelho. Aventuras no coração do Condado envolvendo Bilbo Baggins.',
+    context: 'The Shire, Farthings.',
     chapters: [
       { id: 'sa_1', title: 'A Conspiracy Most Cracked', description: 'Recuperando o mapa do Velho Took no Mathom-house.' },
-      { id: 'sa_2', title: 'Expert Treasure Hunters', description: 'Em busca do cajado perdido de Bandobras Bullroarer.' },
-      { id: 'sa_3', title: 'Most Excellent Fireworks', description: 'Recuperando os fogos de artifício perdidos de Gandalf no Yale.' },
-      { id: 'sa_4', title: 'Involuntary Postmen', description: 'Uma punição que se torna uma missão de entrega urgente.' },
-      { id: 'sa_5', title: 'To Soothe a Savage Beast', description: 'Enfrentando a fera queimada que aterroriza Bamfurlong.' }
+      { id: 'sa_2', title: 'Expert Treasure Hunters', description: 'Buscando o cajado de Bandobras Bullroarer.' },
+      { id: 'sa_3', title: 'Most Excellent Fireworks', description: 'O segredo de Gerda Boffin e os fogos de Gandalf.' },
+      { id: 'sa_4', title: 'Involuntary Postmen', description: 'Uma entrega urgente que atravessa o Woody End.' },
+      { id: 'sa_5', title: 'To Soothe a Savage Beast', description: 'Enfrentando a Fera Queimada em Bamfurlong.' }
     ]
   },
   {
     id: 'ruins_eriador',
-    title: 'Ruins of Eriador (Landmarks)',
-    description: 'Exploração livre de marcos históricos e locais de poder através de Eriador.',
-    context: 'Marcos de Arnor e Cardolan.',
+    title: 'Ruins of Eriador',
+    description: 'Guia de Marcos e Pontos de Interesse através das ruínas do reino perdido de Arnor.',
+    context: 'Eriador, Lugares Históricos.',
     chapters: [
-      { id: 're_1', title: 'The Old Dwarf-mines', description: 'Scowle Hill, onde o último Rei de Arthedain buscou refúgio.' },
-      { id: 're_2', title: 'The White Towers', description: 'Elostirion e a Palantír que olha apenas para o Oeste.' },
-      { id: 're_3', title: 'The Tree of Sorrow', description: 'Um horror vegetal em Eryn Vorn que consome sangue e memórias.' },
-      { id: 're_4', title: 'Tindailin - An Elven Refuge', description: 'Um refúgio de paz corrompido por um espírito das águas.' },
-      { id: 're_5', title: 'Weathertop (Amon Sûl)', description: 'A vigília constante nas ruínas da maior torre de Arnor.' }
+      { id: 're_1', title: 'The Old Dwarf-mines', description: 'Explorando Scowle Hill e o refúgio do último Rei.' },
+      { id: 're_2', title: 'The White Towers', description: 'Elostirion e a guarda do Palantír do Oeste.' },
+      { id: 're_3', title: 'The Tree of Sorrow', description: 'O horror em Eryn Vorn e a maldição do sangue vegetal.' },
+      { id: 're_4', title: 'Tindailin - Elven Refuge', description: 'Um espírito corrompido em um lago sagrado.' },
+      { id: 're_5', title: 'Weathertop (Amon Sûl)', description: 'A vigília constante nas ruínas da maior torre do Reino do Norte.' }
     ]
   }
 ];
