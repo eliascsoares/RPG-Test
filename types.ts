@@ -46,7 +46,27 @@ export interface Attack {
   name: string;
   bonus: number;
   damage: string;
-  type: string;
+  range: string;
+}
+
+// Added Message interface for chat history
+export interface Message {
+  role: 'user' | 'model';
+  text: string;
+  timestamp: number;
+  isRoll?: boolean;
+}
+
+// Added GameState interface for session management
+export interface GameState {
+  currentYear: number;
+  season: string;
+  location: string;
+  fellowshipPool: number;
+  eyeAwareness: number;
+  history: Message[];
+  activeStoryId?: string;
+  activeChapterId?: string;
 }
 
 export interface Character {
@@ -58,6 +78,16 @@ export interface Character {
   isNPC?: boolean;
   isWeary?: boolean;
   journeyRole: JourneyRole;
+  
+  // Novos campos da ficha oficial
+  inspiration: boolean;
+  proficiencyBonus: number;
+  armorClass: number;
+  initiative: number;
+  speed: string;
+  passiveWisdom: number;
+  shadowPath: string;
+  
   stats: {
     strength: number;
     dexterity: number;
@@ -66,33 +96,17 @@ export interface Character {
     wisdom: number;
     charisma: number;
   };
-  hp: { current: number; max: number };
+  
+  savingThrows: string[]; // Lista de stats com proficiência
+  skillProficiencies: string[];
+  
+  hp: { current: number; max: number; temp: number };
   hope: { current: number; max: number };
-  shadow: { points: number; scars: number };
-  fatigue: number;
-  experience: number;
+  shadow: { score: number; scars: number; miserable: boolean; anguished: boolean };
+  
   features: string[];
   equipment: string[];
-  proficiencies: string[];
   attacks: Attack[];
-}
-
-export interface GameState {
-  currentYear: number;
-  season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-  location: string;
-  fellowshipPool: number;
-  eyeAwareness: number;
-  history: Message[];
-  activeStoryId?: string;
-  activeChapterId?: string;
-}
-
-export interface Message {
-  role: 'user' | 'model';
-  text: string;
-  timestamp: number;
-  isRoll?: boolean;
 }
 
 export const SKILLS = [
@@ -100,20 +114,19 @@ export const SKILLS = [
   { name: 'Animal Handling', stat: 'wisdom' },
   { name: 'Athletics', stat: 'strength' },
   { name: 'Deception', stat: 'charisma' },
-  { name: 'History', stat: 'intelligence' },
+  { name: 'Explore', stat: 'wisdom' }, // Específico LotR
+  { name: 'Hunting', stat: 'wisdom' },  // Específico LotR
   { name: 'Insight', stat: 'wisdom' },
   { name: 'Intimidation', stat: 'charisma' },
   { name: 'Investigation', stat: 'intelligence' },
-  { name: 'Medicine', stat: 'wisdom' },
+  { name: 'Medicine', stat: 'intelligence' },
   { name: 'Nature', stat: 'intelligence' },
+  { name: 'Old Lore', stat: 'intelligence' }, // Específico LotR
   { name: 'Perception', stat: 'wisdom' },
   { name: 'Performance', stat: 'charisma' },
   { name: 'Persuasion', stat: 'charisma' },
-  { name: 'Religion', stat: 'intelligence' },
+  { name: 'Riddle', stat: 'intelligence' },   // Específico LotR
   { name: 'Sleight of Hand', stat: 'dexterity' },
   { name: 'Stealth', stat: 'dexterity' },
-  { name: 'Survival', stat: 'wisdom' },
-  { name: 'Riddle', stat: 'intelligence' },
-  { name: 'Old Lore', stat: 'intelligence' },
-  { name: 'Battle', stat: 'wisdom' }
+  { name: 'Travel', stat: 'wisdom' }         // Específico LotR
 ];

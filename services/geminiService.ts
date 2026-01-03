@@ -38,7 +38,7 @@ export class LoremasterService {
     return buffer;
   }
 
-  private async ensureAudioContext(): Promise<AudioContext> {
+  public async resumeAudio() {
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
@@ -50,8 +50,8 @@ export class LoremasterService {
 
   private constructPartyContext(party: Character[], gameState: GameState): string {
     const partyDetails = party.map(p => `
-      - [${p.isNPC ? 'NPC' : 'PC'}] ${p.name} (${p.journeyRole})
-        Status: ${p.isWeary ? 'EXAUSTO' : 'OK'} | Esperança: ${p.hope.current}/${p.hope.max}
+      - [${p.isNPC ? 'NPC' : 'PC'}] ${p.name}
+        AC: ${p.armorClass} | Prof: +${p.proficiencyBonus} | Shadow: ${p.shadow.score}/${p.stats.wisdom}
     `).join('\n');
 
     const activeStory = STORY_MODULES.find(s => s.id === gameState.activeStoryId);
@@ -59,43 +59,60 @@ export class LoremasterService {
     
     if (activeStory) {
       const activeChapter = activeStory.chapters.find(c => c.id === gameState.activeChapterId);
-      storyContext = `\n--- LENDA ATIVA: ${activeStory.title} ---\n${activeStory.description}\nCONTEXTO: ${activeStory.context}`;
-      if (activeChapter) {
-        storyContext += `\nCAPÍTULO ATUAL: ${activeChapter.title}\nOBJETIVO: ${activeChapter.description}`;
-      }
+      storyContext = `\n--- LIVRO: ${activeStory.title} ---\nCAPÍTULO: ${activeChapter?.title}`;
     }
 
-    return `
-      ANO: ${gameState.currentYear} | FELLOWSHIP: ${gameState.fellowshipPool} | OLHO: ${gameState.eyeAwareness}
-      LOCAL: ${gameState.location}${storyContext}
-      PERSONAGENS:
-      ${partyDetails}
-    `;
+    return `VIAGEM: Local Atual: ${gameState.location} | Eye Awareness: ${gameState.eyeAwareness} ${storyContext}\nPARTY:\n${partyDetails}`;
+  }
+
+  async generateMap(location: string): Promise<string | null> {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [{
+          text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient elven/numenorean ruins. Elegant calligraphic labels in Westron style.`
+        }],
+        config: {
+          imageConfig: { aspectRatio: "16:9" }
+        }
+      });
+
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error("Erro mapa:", e);
+      return null;
+    }
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
-    const formattedHistory = history.slice(-6).map(m => ({
+    const formattedHistory = history.slice(-10).map(m => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
     }));
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: [
           ...formattedHistory,
           { role: 'user', parts: [{ text: userInput }] }
         ],
         config: {
           systemInstruction: `${SYSTEM_INSTRUCTION}\n\n${context}`,
-          temperature: 0.7,
+          temperature: 0.8,
         }
       });
 
-      return response.text || "O Escriba permaneceu em silêncio...";
+      return response.text || "...";
     } catch (error: any) {
       console.error("Erro Gemini:", error);
       throw error;
@@ -107,11 +124,10 @@ export class LoremasterService {
     this.stopSpeaking();
 
     try {
-      const ctx = await this.ensureAudioContext();
-      
+      const ctx = await this.resumeAudio();
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Aja como o Escriba das Sombras narrando esta passagem com solenidade e pausadamente: ${text}` }] }],
+        contents: [{ parts: [{ text: `Narre com voz profunda e solene de mestre de RPG: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -123,31 +139,18 @@ export class LoremasterService {
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) throw new Error("Sem dados de áudio");
+      if (!base64Audio) throw new Error("Sem áudio");
 
-      const audioBuffer = await this.decodeAudioData(
-        this.decode(base64Audio),
-        ctx,
-        24000,
-        1
-      );
-
+      const audioBuffer = await this.decodeAudioData(this.decode(base64Audio), ctx, 24000, 1);
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
-      
-      source.onended = () => {
-        if (this.currentSource === source) {
-          this.currentSource = null;
-          if (onEnd) onEnd();
-        }
-      };
-
+      source.onended = () => { if (this.currentSource === source) { this.currentSource = null; onEnd?.(); } };
       this.currentSource = source;
       source.start();
     } catch (error) {
-      console.error("Erro no TTS:", error);
-      if (onEnd) onEnd();
+      console.error("Erro TTS:", error);
+      onEnd?.();
     }
   }
 
