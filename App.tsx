@@ -206,7 +206,7 @@ const App: React.FC = () => {
                       character={char} 
                       onUpdate={(u) => setCharacters(characters.map(c => c.id === u.id ? u : c))}
                       onRemove={(id) => setCharacters(characters.filter(c => c.id !== id))}
-                      onAskHelp={(f) => handleSend(`Escriba, como preencho o campo "${f}" nas regras de LOTR 5E?`)}
+                      onAskHelp={(f) => handleSend(`[PEDIDO DE AJUDA] Escriba, preciso de orientação técnica sobre "${f}". Explique como preencher, quais dados usar (Ex: d20) e as regras do Lord of the Rings 5E envolvidas.`)}
                     />
                   ))}
                   <button onClick={() => createCharacter(sidebarTab === 'NPCs')} className="w-full py-5 border-2 border-dashed border-emerald-900/30 rounded-2xl text-emerald-900 text-xs font-bold hover:bg-emerald-900/5 transition-all active:scale-95 uppercase tracking-widest font-cinzel">+ Novo {sidebarTab === 'Heroes' ? 'Herói' : 'Aliado'}</button>
@@ -225,7 +225,7 @@ const App: React.FC = () => {
             <div className="hidden md:flex items-center gap-4 border-l border-emerald-900/20 pl-4">
                <div className="w-9 h-9 rounded-full bg-black border border-red-900/50 flex items-center justify-center text-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)] text-lg">👁️</div>
                <div className="flex flex-col">
-                  <span className="font-cinzel text-[9px] tracking-[0.2em] text-emerald-700 font-bold uppercase leading-none mb-1">Carga da Sombra</span>
+                  <span className="font-cinzel text-[9px] tracking-[0.2em] text-emerald-700 font-bold uppercase leading-none mb-1">Localização</span>
                   <span className="text-xs text-emerald-100 font-medieval">{gameState.location}</span>
                </div>
             </div>
@@ -257,7 +257,7 @@ const App: React.FC = () => {
               <div className={`
                 max-w-[95%] md:max-w-[85%] lg:max-w-[75%] p-8 rounded-[2rem] shadow-2xl relative
                 ${msg.role === 'user' 
-                  ? 'bg-[#0a200a] border border-emerald-900/40 text-emerald-100 font-serif italic' 
+                  ? 'bg-[#0a200a] border border-emerald-900/40 text-emerald-100 font-serif italic shadow-inner' 
                   : 'parchment border-2 border-emerald-800/40 text-[#1a261a] font-serif text-xl shadow-[20px_20px_50px_rgba(0,0,0,0.6)]'}
               `}>
                 {msg.role === 'model' && (
@@ -277,7 +277,7 @@ const App: React.FC = () => {
           ))}
           {loading && (
             <div className="flex justify-start px-12 animate-pulse">
-              <div className="bg-emerald-900/10 px-8 py-4 rounded-full border border-emerald-800/20 text-emerald-600 italic text-lg">O Escriba consulta os fios do destino...</div>
+              <div className="bg-emerald-900/10 px-8 py-4 rounded-full border border-emerald-800/20 text-emerald-600 italic text-lg shadow-sm">O Escriba consulta os fios do destino...</div>
             </div>
           )}
           <div ref={chatEndRef} className="h-12" />
@@ -333,7 +333,7 @@ const App: React.FC = () => {
               <div className="flex gap-6 items-center pt-6">
                 <div className="flex-1">
                    <label className="text-[11px] font-bold text-emerald-900/60 uppercase ml-4 mb-3 block tracking-widest font-cinzel text-center">Valor do D20</label>
-                   <input type="number" className="w-full bg-white border-4 border-emerald-900/40 rounded-3xl p-8 text-center text-6xl font-bold text-emerald-950 outline-none" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
+                   <input type="number" className="w-full bg-white border-4 border-emerald-900/40 rounded-3xl p-8 text-center text-6xl font-bold text-emerald-950 outline-none shadow-2xl" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
                 </div>
                 <button onClick={() => {
                   const char = characters.find(c => c.id === selectedCharId);
