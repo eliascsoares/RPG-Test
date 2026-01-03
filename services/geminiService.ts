@@ -42,7 +42,7 @@ export class LoremasterService {
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
     return this.audioContext;
@@ -66,15 +66,13 @@ export class LoremasterService {
   }
 
   async generateMap(location: string): Promise<string | null> {
-    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        // Correcting contents to use a Content object with parts
         contents: {
           parts: [{
-            text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient elven/numenorean ruins. Elegant calligraphic labels in Westron style.`
+            text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient ruins. Elegant calligraphic labels in Westron style.`
           }]
         },
         config: {
@@ -82,9 +80,14 @@ export class LoremasterService {
         }
       });
 
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          return `data:image/png;base64,${part.inlineData.data}`;
+      const candidate = response.candidates?.[0];
+      const parts = candidate?.content?.parts;
+
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+          }
         }
       }
       return null;
@@ -95,7 +98,6 @@ export class LoremasterService {
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
-    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
@@ -125,12 +127,13 @@ export class LoremasterService {
   }
 
   async speak(text: string, onEnd?: () => void) {
-    // Always initialize client right before use
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     this.stopSpeaking();
 
     try {
       const ctx = await this.resumeAudio();
+      if (!ctx) return;
+
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: `Narre com voz profunda e solene de mestre de RPG: ${text}` }] }],
@@ -151,7 +154,12 @@ export class LoremasterService {
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
-      source.onended = () => { if (this.currentSource === source) { this.currentSource = null; onEnd?.(); } };
+      source.onended = () => { 
+        if (this.currentSource === source) { 
+          this.currentSource = null; 
+          onEnd?.(); 
+        } 
+      };
       this.currentSource = source;
       source.start();
     } catch (error) {
