@@ -5,8 +5,8 @@ import { LoremasterService } from './services/geminiService';
 import { CharacterCard } from './components/CharacterCard';
 import { DICE_SVG, STORY_MODULES } from './constants';
 
-const STORAGE_KEY_CHARACTERS = 'arnor_loremaster_characters_v2';
-const STORAGE_KEY_GAMESTATE = 'arnor_loremaster_gamestate_v2';
+const STORAGE_KEY_CHARACTERS = 'arnor_loremaster_characters_v3';
+const STORAGE_KEY_GAMESTATE = 'arnor_loremaster_gamestate_v3';
 
 const App: React.FC = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -45,7 +45,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (characters.length > 0) localStorage.setItem(STORAGE_KEY_CHARACTERS, JSON.stringify(characters));
+    localStorage.setItem(STORAGE_KEY_CHARACTERS, JSON.stringify(characters));
     localStorage.setItem(STORAGE_KEY_GAMESTATE, JSON.stringify(gameState));
   }, [characters, gameState]);
 
@@ -68,10 +68,9 @@ const App: React.FC = () => {
     try {
       const response = await loremaster.current.sendMessage(textToSend, characters, gameState, updatedHistory);
       
-      // Detecção inteligente de local para novos mapas
-      const geoKeywords = ['chegam', 'partem', 'direção', 'viagem', 'estrada', 'local', 'ruínas', 'landmark', 'torre', 'colina'];
+      const geoKeywords = ['chegam', 'viajam', 'direção', 'estrada', 'local', 'ruínas', 'torre', 'colina', 'condado', 'bri'];
       const responseLower = response.toLowerCase();
-      if (geoKeywords.some(key => responseLower.includes(key))) {
+      if (geoKeywords.some(key => responseLower.includes(key)) || Math.random() > 0.8) {
         const map = await loremaster.current.generateMap(gameState.location);
         if (map) setCurrentMap(map);
       }
@@ -83,9 +82,13 @@ const App: React.FC = () => {
         setIsSpeaking(true);
         await loremaster.current.speak(response, () => setIsSpeaking(false));
       }
-    } catch (e) {
-      console.error(e);
-      const errorMsg: Message = { role: 'model', text: "A névoa de Arnor impediu minha visão. (Erro de conexão)", timestamp: Date.now() };
+    } catch (e: any) {
+      console.error("LOREMASTER ERROR:", e);
+      const errorMsg: Message = { 
+        role: 'model', 
+        text: `As Sombras de Arnor escureceram minha visão. (Erro: ${e.message || 'Conexão interrompida'}). Tente novamente em instantes.`, 
+        timestamp: Date.now() 
+      };
       setGameState(prev => ({ ...prev, history: [...prev.history, errorMsg] }));
     } finally {
       setLoading(false);
@@ -137,14 +140,13 @@ const App: React.FC = () => {
       location: story.context,
       history: []
     }));
-    handleSend(`Escriba, narre o início do Capítulo "${chapter.title}" do compêndio "${story.title}". Contexto: ${chapter.description}`);
+    handleSend(`Escriba, narre o início da Lenda "${story.title}", Capítulo "${chapter.title}". Contexto: ${chapter.description}`);
     if (window.innerWidth < 1024) setShowSidebar(false);
   };
 
   return (
     <div className="flex h-screen w-full bg-[#040804] text-[#d1dbd1] overflow-hidden font-serif">
       
-      {/* Sidebar - iPad responsive design */}
       <aside className={`
         ${showSidebar ? 'w-full md:w-[450px]' : 'w-0'} 
         transition-all duration-300 bg-[#081108] border-r border-emerald-900/30 flex flex-col z-50 fixed lg:relative h-full shadow-2xl
@@ -152,7 +154,7 @@ const App: React.FC = () => {
         {showSidebar && (
           <div className="p-5 flex flex-col h-full overflow-hidden animate-in fade-in duration-300">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="font-cinzel text-emerald-500 font-bold tracking-[0.2em] text-lg uppercase">Arnor Loremaster</h2>
+              <h2 className="font-cinzel text-emerald-500 font-bold tracking-[0.2em] text-lg uppercase">Escriba de Arnor</h2>
               <button onClick={() => setShowSidebar(false)} className="lg:hidden text-emerald-700 p-2 text-xl">✕</button>
             </div>
 
@@ -182,7 +184,6 @@ const App: React.FC = () => {
                       </button>
                       {expandedStoryId === story.id && (
                         <div className="bg-emerald-950/10 p-3 space-y-2 border-t border-emerald-900/20">
-                          <p className="text-[9px] font-bold text-emerald-900/40 uppercase mb-2 px-1 tracking-widest font-cinzel">Capítulos</p>
                           {story.chapters.map(c => (
                             <button 
                               key={c.id}
@@ -218,32 +219,26 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col relative overflow-hidden bg-[#040604]">
         
-        {/* Navigation Bar */}
-        <div className="h-16 lg:h-18 flex items-center px-4 md:px-8 justify-between border-b border-emerald-900/20 bg-[#050a05] z-40">
+        <div className="h-16 flex items-center px-4 md:px-8 justify-between border-b border-emerald-900/20 bg-[#050a05] z-40">
           <div className="flex items-center gap-4">
             <button onClick={() => setShowSidebar(true)} className="text-2xl hover:scale-110 transition-transform p-2">📜</button>
-            <div className="h-8 w-px bg-emerald-900/20 hidden md:block" />
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4 border-l border-emerald-900/20 pl-4">
                <div className="w-9 h-9 rounded-full bg-black border border-red-900/50 flex items-center justify-center text-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)] text-lg">👁️</div>
                <div className="flex flex-col">
-                  <span className="font-cinzel text-[9px] tracking-[0.2em] text-emerald-700 font-bold uppercase leading-none mb-1">Localização</span>
+                  <span className="font-cinzel text-[9px] tracking-[0.2em] text-emerald-700 font-bold uppercase leading-none mb-1">Carga da Sombra</span>
                   <span className="text-xs text-emerald-100 font-medieval">{gameState.location}</span>
                </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowRollPanel(true)} className="bg-emerald-900/20 border border-emerald-500/40 px-5 py-2.5 rounded-2xl text-emerald-400 text-xs font-bold flex items-center gap-3 hover:bg-emerald-900/40 transition-all active:scale-95 shadow-lg group">
-              <span className="group-hover:rotate-12 transition-transform">{DICE_SVG}</span> 
-              <span className="font-cinzel tracking-widest">TESTAR</span>
-            </button>
-          </div>
+          <button onClick={() => setShowRollPanel(true)} className="bg-emerald-900/20 border border-emerald-500/40 px-5 py-2.5 rounded-2xl text-emerald-400 text-xs font-bold flex items-center gap-3 hover:bg-emerald-900/40 transition-all shadow-lg font-cinzel tracking-widest uppercase">
+            {DICE_SVG} Testar
+          </button>
         </div>
 
-        {/* Dynamic Map - Hover Expandable */}
         {currentMap && (
-          <div className="absolute top-24 right-6 w-60 lg:w-96 z-40 rounded-3xl overflow-hidden border-2 border-emerald-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.9)] cursor-zoom-in transition-all duration-700 hover:w-[90%] md:hover:w-[70%] hover:scale-105 group">
-             <img src={currentMap} className="w-full h-full object-cover" alt="Mapa Dinâmico" />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+          <div className="absolute top-20 right-6 w-64 md:w-96 z-40 rounded-3xl overflow-hidden border-2 border-emerald-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.9)] cursor-zoom-in transition-all duration-700 hover:w-[90%] md:hover:w-[70%] group">
+             <img src={currentMap} className="w-full h-full object-cover" alt="Mapa" />
+             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                 <span className="font-cinzel text-xs text-emerald-400 font-bold tracking-widest uppercase">Visão Épica de Arnor</span>
              </div>
           </div>
@@ -251,70 +246,57 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-14 space-y-12 scrollbar-hide pb-48">
           {gameState.history.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center opacity-10 text-center select-none py-20">
-              <div className="text-8xl md:text-[12rem] font-cinzel text-emerald-900 tracking-tighter uppercase leading-none">Arnor</div>
-              <p className="max-w-2xl italic text-emerald-800 text-xl md:text-3xl mt-12 font-serif leading-relaxed px-6">
-                "Não é o que temos, mas o que fazemos com o tempo que nos é dado."
-              </p>
+            <div className="h-full flex flex-col items-center justify-center opacity-10 text-center py-20">
+              <div className="text-8xl md:text-[10rem] font-cinzel text-emerald-900 tracking-tighter uppercase">Arnor</div>
+              <p className="max-w-2xl italic text-emerald-800 text-xl md:text-2xl mt-12 font-serif px-6">"Tudo o que temos de decidir é o que fazer com o tempo que nos é dado."</p>
             </div>
           )}
 
           {gameState.history.map((msg, i) => (
             <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-8 duration-700`}>
               <div className={`
-                max-w-[95%] md:max-w-[85%] lg:max-w-[75%] p-8 md:p-10 rounded-[2.5rem] shadow-2xl relative transition-all
+                max-w-[95%] md:max-w-[85%] lg:max-w-[75%] p-8 rounded-[2rem] shadow-2xl relative
                 ${msg.role === 'user' 
-                  ? 'bg-[#0a200a] border border-emerald-900/40 text-emerald-100 font-serif italic shadow-inner' 
-                  : 'parchment border-2 border-emerald-800/40 text-[#1a261a] font-serif text-xl leading-relaxed shadow-[20px_20px_50px_rgba(0,0,0,0.6)]'}
+                  ? 'bg-[#0a200a] border border-emerald-900/40 text-emerald-100 font-serif italic' 
+                  : 'parchment border-2 border-emerald-800/40 text-[#1a261a] font-serif text-xl shadow-[20px_20px_50px_rgba(0,0,0,0.6)]'}
               `}>
                 {msg.role === 'model' && (
-                  <div className="absolute -top-5 left-10 flex items-center gap-3">
-                    <div className="bg-emerald-900 text-white text-[10px] px-5 py-2 rounded-full font-cinzel uppercase tracking-[0.3em] shadow-2xl border border-emerald-400/40">Escriba das Sombras</div>
-                    {isSpeaking && i === gameState.history.length - 1 && (
-                      <div className="flex gap-1 items-center h-4 px-2 bg-emerald-800/30 rounded-full border border-emerald-400/20">
-                        <div className="w-1 bg-emerald-400 rounded-full animate-voice-bar-1" />
-                        <div className="w-1 bg-emerald-400 rounded-full animate-voice-bar-2" />
-                        <div className="w-1 bg-emerald-400 rounded-full animate-voice-bar-3" />
-                      </div>
-                    )}
+                  <div className="absolute -top-4 left-8 flex items-center gap-3">
+                    <div className="bg-emerald-900 text-white text-[10px] px-4 py-1.5 rounded-full font-cinzel uppercase tracking-[0.2em] shadow-2xl border border-emerald-400/40">Escriba das Sombras</div>
                   </div>
                 )}
                 <div className="whitespace-pre-wrap">{msg.text}</div>
               </div>
               {msg.isRoll && i === gameState.history.length - 1 && !loading && (
-                <div className="flex gap-4 mt-6 px-4 animate-in slide-in-from-right duration-500">
-                   <button onClick={() => handleSend("O herói triunfou! Descreva o sucesso épico.")} className="bg-emerald-950 text-emerald-200 border-2 border-emerald-500/40 px-8 py-2.5 rounded-2xl text-xs font-bold hover:bg-emerald-900 transition-all shadow-2xl active:scale-95 font-cinzel uppercase tracking-widest">✨ Sucesso</button>
-                   <button onClick={() => handleSend("A Sombra prevaleceu... Narre as consequências da falha.")} className="bg-red-950 text-red-200 border-2 border-red-500/40 px-8 py-2.5 rounded-2xl text-xs font-bold hover:bg-red-900 transition-all shadow-2xl active:scale-95 font-cinzel uppercase tracking-widest">💀 Falha</button>
+                <div className="flex gap-4 mt-6 px-4">
+                   <button onClick={() => handleSend("O herói triunfou! Descreva o sucesso épico.")} className="bg-emerald-950 text-emerald-200 border-2 border-emerald-500/40 px-8 py-2 rounded-2xl text-xs font-bold hover:bg-emerald-900 transition-all font-cinzel uppercase tracking-widest shadow-xl">✨ Sucesso</button>
+                   <button onClick={() => handleSend("A Sombra prevaleceu... Narre as consequências da falha.")} className="bg-red-950 text-red-200 border-2 border-red-500/40 px-8 py-2 rounded-2xl text-xs font-bold hover:bg-red-900 transition-all font-cinzel uppercase tracking-widest shadow-xl">💀 Falha</button>
                 </div>
               )}
             </div>
           ))}
           {loading && (
             <div className="flex justify-start px-12 animate-pulse">
-              <div className="bg-emerald-900/10 px-10 py-5 rounded-full border border-emerald-800/20 text-emerald-600 italic text-lg flex items-center gap-5">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-bounce" />
-                O Escriba consulta os fios do destino...
-              </div>
+              <div className="bg-emerald-900/10 px-8 py-4 rounded-full border border-emerald-800/20 text-emerald-600 italic text-lg">O Escriba consulta os fios do destino...</div>
             </div>
           )}
           <div ref={chatEndRef} className="h-12" />
         </div>
 
-        {/* Action Input */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 bg-gradient-to-t from-[#040804] to-transparent z-40">
           <div className="max-w-5xl mx-auto flex gap-5 items-end">
-            <div className="flex-1 relative group shadow-2xl rounded-3xl overflow-hidden">
+            <div className="flex-1 relative shadow-2xl rounded-3xl overflow-hidden border border-emerald-900/60">
               <textarea 
                 value={input} 
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Declare sua ação nas sombras de Eriador..."
+                placeholder="Declare sua ação nas sombras de Arnor..."
                 rows={1}
-                className="w-full bg-[#0a1c0a]/95 backdrop-blur-2xl border border-emerald-900/60 rounded-3xl p-6 lg:p-7 text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none min-h-[64px] max-h-[220px] text-lg md:text-xl font-serif transition-all placeholder:text-emerald-900/50"
+                className="w-full bg-[#0a1c0a]/95 backdrop-blur-2xl p-6 lg:p-7 text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none min-h-[64px] max-h-[220px] text-lg md:text-xl font-serif"
               />
               <button 
                 onClick={() => setVoiceEnabled(!voiceEnabled)} 
-                className={`absolute right-8 top-1/2 -translate-y-1/2 text-3xl transition-all duration-500 ${voiceEnabled ? 'text-emerald-400 drop-shadow-[0_0_15px_#10b981]' : 'text-emerald-950 opacity-30 hover:opacity-100 hover:text-emerald-700'}`}
+                className={`absolute right-8 top-1/2 -translate-y-1/2 text-3xl transition-all duration-500 ${voiceEnabled ? 'text-emerald-400 drop-shadow-[0_0_15px_#10b981]' : 'text-emerald-950 opacity-30 hover:opacity-100'}`}
               >
                 {voiceEnabled ? '🔊' : '🔇'}
               </button>
@@ -322,7 +304,7 @@ const App: React.FC = () => {
             <button 
               onClick={() => handleSend()} 
               disabled={loading || !input.trim()} 
-              className="bg-emerald-900 text-white w-18 h-18 lg:w-22 lg:h-22 rounded-3xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-20 transition-all shadow-[0_10px_40px_rgba(0,0,0,0.8)] active:scale-95 border-b-4 border-emerald-950 group"
+              className="bg-emerald-900 text-white w-18 h-18 lg:w-22 lg:h-22 rounded-3xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-20 transition-all shadow-2xl border-b-4 border-emerald-950 group"
             >
               <span className="text-4xl group-hover:scale-110 transition-transform">📜</span>
             </button>
@@ -330,29 +312,28 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Roll Modal - Enhanced for larger touch screens */}
       {showRollPanel && (
         <div className="fixed inset-0 bg-black/98 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl animate-in zoom-in duration-300">
-          <div className="parchment w-full max-w-lg p-10 md:p-14 rounded-[4rem] border-4 border-emerald-950 shadow-[0_0_100px_rgba(0,0,0,0.9)] scale-in-center">
-            <h3 className="font-cinzel text-center border-b-2 border-emerald-900/20 pb-8 mb-10 font-bold text-2xl uppercase tracking-[0.5em] text-emerald-950">Desafio do Destino</h3>
+          <div className="parchment w-full max-w-lg p-10 md:p-14 rounded-[3rem] border-4 border-emerald-950 shadow-2xl">
+            <h3 className="font-cinzel text-center border-b-2 border-emerald-900/10 pb-8 mb-10 font-bold text-2xl uppercase tracking-[0.5em] text-emerald-950">Desafio do Destino</h3>
             <div className="space-y-8">
               <div>
                 <label className="text-[11px] font-bold text-emerald-900/60 uppercase ml-4 mb-3 block tracking-widest font-cinzel">O Caminhante</label>
-                <select className="w-full bg-white/70 border-2 border-emerald-900/20 rounded-2xl p-5 text-base font-bold text-emerald-950 focus:bg-white outline-none transition-all shadow-inner" value={selectedCharId} onChange={e => setSelectedCharId(e.target.value)}>
+                <select className="w-full bg-white/70 border-2 border-emerald-900/20 rounded-2xl p-5 text-lg font-bold text-emerald-950 outline-none" value={selectedCharId} onChange={e => setSelectedCharId(e.target.value)}>
                   <option value="">-- Herói --</option>
                   {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[11px] font-bold text-emerald-900/60 uppercase ml-4 mb-3 block tracking-widest font-cinzel">A Habilidade</label>
-                <select className="w-full bg-white/70 border-2 border-emerald-900/20 rounded-2xl p-5 text-base font-bold text-emerald-950 focus:bg-white outline-none transition-all shadow-inner" value={selectedSkill} onChange={e => setSelectedSkill(e.target.value)}>
+                <label className="text-[11px] font-bold text-emerald-900/60 uppercase ml-4 mb-3 block tracking-widest font-cinzel">Habilidade</label>
+                <select className="w-full bg-white/70 border-2 border-emerald-900/20 rounded-2xl p-5 text-lg font-bold text-emerald-950 outline-none" value={selectedSkill} onChange={e => setSelectedSkill(e.target.value)}>
                   {SKILLS.map(s => <option key={s.name} value={s.name}>{s.name} ({s.stat.slice(0,3)})</option>)}
                 </select>
               </div>
               <div className="flex gap-6 items-center pt-6">
                 <div className="flex-1">
                    <label className="text-[11px] font-bold text-emerald-900/60 uppercase ml-4 mb-3 block tracking-widest font-cinzel text-center">Valor do D20</label>
-                   <input type="number" className="w-full bg-white border-4 border-emerald-900/40 rounded-3xl p-8 text-center text-6xl font-bold text-emerald-950 outline-none focus:border-emerald-600 transition-all shadow-2xl" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
+                   <input type="number" className="w-full bg-white border-4 border-emerald-900/40 rounded-3xl p-8 text-center text-6xl font-bold text-emerald-950 outline-none" value={diceValue} onChange={e => setDiceValue(e.target.value === '' ? '' : +e.target.value)} />
                 </div>
                 <button onClick={() => {
                   const char = characters.find(c => c.id === selectedCharId);
@@ -363,9 +344,9 @@ const App: React.FC = () => {
                     setShowRollPanel(false);
                     setDiceValue('');
                   }
-                }} className="bg-emerald-950 text-white px-12 h-[120px] rounded-[2.5rem] font-cinzel font-bold text-lg hover:bg-emerald-800 transition-all shadow-2xl active:scale-95 border-b-6 border-black uppercase tracking-widest">Rolar</button>
+                }} className="bg-emerald-950 text-white px-12 h-[120px] rounded-[2.5rem] font-cinzel font-bold text-xl hover:bg-emerald-800 transition-all uppercase shadow-2xl active:scale-95">Rolar</button>
               </div>
-              <button onClick={() => setShowRollPanel(false)} className="w-full text-sm text-red-900/40 font-bold uppercase mt-10 hover:text-red-700 transition-colors tracking-[0.3em] font-cinzel">Abandonar Destino</button>
+              <button onClick={() => setShowRollPanel(false)} className="w-full text-xs text-red-900/40 font-bold uppercase mt-10 hover:text-red-700 tracking-[0.3em] font-cinzel">Abandonar Destino</button>
             </div>
           </div>
         </div>

@@ -50,8 +50,8 @@ export class LoremasterService {
 
   private constructPartyContext(party: Character[], gameState: GameState): string {
     const partyDetails = party.map(p => `
-      - [${p.isNPC ? 'NPC' : 'PC'}] ${p.name}
-        AC: ${p.armorClass} | Prof: +${p.proficiencyBonus} | Shadow: ${p.shadow.score}/${p.stats.wisdom}
+      - [${p.isNPC ? 'Aliado/NPC' : 'Personagem'}] ${p.name}
+        Defesa: ${p.armorClass} | HP: ${p.hp.current}/${p.hp.max} | Sombra: ${p.shadow.score}
     `).join('\n');
 
     const activeStory = STORY_MODULES.find(s => s.id === gameState.activeStoryId);
@@ -59,10 +59,10 @@ export class LoremasterService {
     
     if (activeStory) {
       const activeChapter = activeStory.chapters.find(c => c.id === gameState.activeChapterId);
-      storyContext = `\n--- LIVRO: ${activeStory.title} ---\nCAPÍTULO: ${activeChapter?.title}`;
+      storyContext = `\n--- LIVRO ATUAL: ${activeStory.title} ---\nCENÁRIO: ${activeChapter?.title}\nCONTEXTO: ${activeChapter?.description}`;
     }
 
-    return `VIAGEM: Local Atual: ${gameState.location} | Eye Awareness: ${gameState.eyeAwareness} ${storyContext}\nPARTY:\n${partyDetails}`;
+    return `SITUAÇÃO ATUAL:\nLocal: ${gameState.location}\nNível de Ameaça (Olho): ${gameState.eyeAwareness}\n${storyContext}\n\nGRUPO DE AVENTUREIROS:\n${partyDetails}`;
   }
 
   async generateMap(location: string): Promise<string | null> {
@@ -70,11 +70,12 @@ export class LoremasterService {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: {
+        contents: [{
+          role: 'user',
           parts: [{
-            text: `A detailed hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, intricate terrain features, mountains, rivers, and ancient ruins. Elegant calligraphic labels in Westron style.`
+            text: `A professional hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, highly detailed terrain, mountains, forests, and elven ruins. Calligraphic labels in Westron style. Masterpiece quality.`
           }]
-        },
+        }],
         config: {
           imageConfig: { aspectRatio: "16:9" }
         }
@@ -92,7 +93,7 @@ export class LoremasterService {
       }
       return null;
     } catch (e) {
-      console.error("Erro mapa:", e);
+      console.error("Erro ao gerar mapa:", e);
       return null;
     }
   }
@@ -101,27 +102,30 @@ export class LoremasterService {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
-    const formattedHistory = history.slice(-10).map(m => ({
+    // Filtramos o histórico para garantir que a última mensagem seja do usuário
+    // e que o histórico enviado não contenha a mensagem que estamos prestes a enviar.
+    // O histórico em App.tsx já inclui a última entrada do usuário, por isso pegamos as anteriores.
+    const conversationHistory = history.slice(0, -1).slice(-10).map(m => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
     }));
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: [
-          ...formattedHistory,
+          ...conversationHistory,
           { role: 'user', parts: [{ text: userInput }] }
         ],
         config: {
-          systemInstruction: `${SYSTEM_INSTRUCTION}\n\n${context}`,
-          temperature: 0.8,
+          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nINFORMAÇÕES DA PARTIDA:\n${context}`,
+          temperature: 0.7,
         }
       });
 
-      return response.text || "...";
+      return response.text || "O Escriba permaneceu em silêncio...";
     } catch (error: any) {
-      console.error("Erro Gemini:", error);
+      console.error("Erro detalhado da API Gemini:", error);
       throw error;
     }
   }
@@ -136,7 +140,7 @@ export class LoremasterService {
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Narre com voz profunda e solene de mestre de RPG: ${text}` }] }],
+        contents: [{ parts: [{ text: `Narre com tom de voz épico e solene de mestre de RPG: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -148,7 +152,7 @@ export class LoremasterService {
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) throw new Error("Sem áudio");
+      if (!base64Audio) throw new Error("Sem áudio retornado");
 
       const audioBuffer = await this.decodeAudioData(this.decode(base64Audio), ctx, 24000, 1);
       const source = ctx.createBufferSource();
@@ -163,7 +167,7 @@ export class LoremasterService {
       this.currentSource = source;
       source.start();
     } catch (error) {
-      console.error("Erro TTS:", error);
+      console.error("Erro no TTS:", error);
       onEnd?.();
     }
   }
