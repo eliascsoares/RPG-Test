@@ -85,7 +85,7 @@ const App: React.FC = () => {
       if (autoVision) {
         triggerVision(gameState.location, true);
       } else {
-        const keywords = ['mapa', 'ver', 'olhar', 'lugar', 'chegam', 'ruína', 'estrada', 'paisagem'];
+        const keywords = ['mapa', 'ver', 'olhar', 'lugar', 'chegam', 'ruína', 'estrada', 'paisagem', 'visão'];
         if (keywords.some(k => response.toLowerCase().includes(k))) {
           triggerVision(response.slice(0, 400));
         }
@@ -116,10 +116,46 @@ const App: React.FC = () => {
     if (window.innerWidth < 1024) setShowSidebar(false);
   };
 
+  const createNewCharacter = (isNPC: boolean) => {
+    const newChar: Character = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: isNPC ? 'Novo Aliado' : 'Novo Herói',
+      culture: Culture.MEN_BREE,
+      calling: Calling.WARDEN,
+      level: 1,
+      stats: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
+      hp: { current: 10, max: 10, temp: 0 },
+      hope: { current: 10, max: 10 },
+      shadow: { score: 0, scars: 0, miserable: false, anguished: false },
+      savingThrows: [],
+      skillProficiencies: [],
+      isNPC,
+      inspiration: false, // Correção do erro de build
+      proficiencyBonus: 2,
+      armorClass: 10,
+      initiative: 0,
+      speed: '30ft',
+      passiveWisdom: 10,
+      experiencePoints: 0,
+      distinctiveFeatures: '',
+      shadowPath: '',
+      hitDice: { current: 1, max: '1d8' },
+      deathSaves: { successes: 0, failures: 0 },
+      encumbrance: { carriedWeight: 0, isEncumbered: false, isHeavilyEncumbered: false },
+      toolsAndLanguages: '',
+      featuresTraitsVirtues: '',
+      equipment: '',
+      attacks: [],
+      journeyRole: JourneyRole.NONE,
+      fellowshipPoints: 0
+    };
+    setCharacters([...characters, newChar]);
+  };
+
   return (
     <div className="flex h-screen w-full bg-[#040804] text-[#d1dbd1] overflow-hidden font-serif">
       
-      {/* Sidebar Restored */}
+      {/* Sidebar de Lendas e Personagens */}
       <aside className={`${showSidebar ? 'w-full md:w-[450px]' : 'w-0'} transition-all duration-300 bg-[#081108] border-r border-emerald-900/30 flex flex-col z-50 fixed lg:relative h-full shadow-2xl overflow-hidden`}>
         {showSidebar && (
           <div className="p-5 flex flex-col h-full animate-in fade-in duration-300">
@@ -178,7 +214,7 @@ const App: React.FC = () => {
                       onAskHelp={(f) => handleSend(`Escriba, preciso de ajuda com "${f}". Como as regras de Arnor se aplicam?`)}
                     />
                   ))}
-                  <button onClick={() => setCharacters([...characters, { id: Math.random().toString(), name: sidebarTab === 'Heroes' ? 'Novo Herói' : 'Novo Aliado', culture: Culture.MEN_BREE, calling: Calling.WARDEN, level: 1, stats: {strength:10, dexterity:10, constitution:10, intelligence:10, wisdom:10, charisma:10}, hp: {current:10, max:10, temp:0}, hope: {current:10, max:10}, shadow: {score:0, scars:0, miserable:false, anguished:false}, savingThrows: [], skillProficiencies: [], isNPC: sidebarTab === 'NPCs', proficiencyBonus: 2, armorClass: 10, initiative: 0, speed: '30ft', passiveWisdom: 10, experiencePoints: 0, distinctiveFeatures: '', shadowPath: '', hitDice: {current:1, max:'1d8'}, deathSaves: {successes:0, failures:0}, encumbrance: {carriedWeight:0, isEncumbered:false, isHeavilyEncumbered:false}, toolsAndLanguages: '', featuresTraitsVirtues: '', equipment: '', attacks: [], journeyRole: JourneyRole.NONE, fellowshipPoints: 0 }])} className="w-full py-5 border-2 border-dashed border-emerald-900/30 rounded-2xl text-emerald-900 text-[10px] font-bold hover:bg-emerald-900/5 transition-all uppercase font-cinzel tracking-widest">+ Novo {sidebarTab === 'Heroes' ? 'Herói' : 'Aliado'}</button>
+                  <button onClick={() => createNewCharacter(sidebarTab === 'NPCs')} className="w-full py-5 border-2 border-dashed border-emerald-900/30 rounded-2xl text-emerald-900 text-[10px] font-bold hover:bg-emerald-900/5 transition-all uppercase font-cinzel tracking-widest">+ Novo {sidebarTab === 'Heroes' ? 'Herói' : 'Aliado'}</button>
                 </div>
               )}
             </div>
@@ -206,7 +242,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Cinematic Vision Overlay with corrected Click logic */}
+        {/* Visão do Palantír com Lightbox */}
         {(currentVision || visionLoading) && (
           <div className="absolute top-20 right-6 w-72 md:w-[450px] z-40 group animate-in slide-in-from-right duration-700">
             <div className="parchment p-1 rounded-2xl border-2 border-emerald-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.8)] overflow-hidden relative">
@@ -227,7 +263,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Fullscreen Vision (Lightbox) */}
+        {/* Lightbox para Imagem em Tela Cheia */}
         {showFullscreenVision && currentVision && (
           <div 
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-500 cursor-zoom-out"
@@ -272,10 +308,18 @@ const App: React.FC = () => {
           <div ref={chatEndRef} className="h-12" />
         </div>
 
+        {/* Input de Comando */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 bg-gradient-to-t from-[#040804] via-[#040804]/90 to-transparent z-40">
           <div className="max-w-4xl mx-auto flex gap-4 items-end">
             <div className="flex-1 relative shadow-2xl rounded-3xl overflow-hidden border border-emerald-900/50">
-              <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Declare sua ação nas Sombras..." rows={1} className="w-full bg-[#0a1c0a]/95 p-6 text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none text-xl font-serif" />
+              <textarea 
+                value={input} 
+                onChange={e => setInput(e.target.value)} 
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} 
+                placeholder="Declare sua ação nas Sombras..." 
+                rows={1} 
+                className="w-full bg-[#0a1c0a]/95 p-6 text-emerald-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none text-xl font-serif" 
+              />
               <button onClick={() => setVoiceEnabled(!voiceEnabled)} className={`absolute right-6 top-1/2 -translate-y-1/2 text-2xl transition-all ${voiceEnabled ? 'text-emerald-400 drop-shadow-[0_0_10px_#10b981]' : 'text-emerald-950 opacity-40'}`}> {voiceEnabled ? '🔊' : '🔇'}</button>
             </div>
             <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-emerald-900 text-white w-20 h-20 rounded-3xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-20 transition-all shadow-2xl border-b-4 border-emerald-950 group">
@@ -285,6 +329,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      {/* Painel de Rolagem */}
       {showRollPanel && (
         <div className="fixed inset-0 bg-black/98 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl animate-in zoom-in duration-300">
           <div className="parchment w-full max-w-lg p-12 rounded-[3rem] border-4 border-emerald-950 shadow-2xl">
