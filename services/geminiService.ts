@@ -66,13 +66,11 @@ export class LoremasterService {
   }
 
   async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     
-    // Limpeza profunda do prompt para evitar filtros de segurança do Google
-    // Remove termos que podem ser interpretados como violentos ou sensíveis em RPG
     const safeWords = description
-      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque)/gi, '')
-      .split(/[.!?\n]/)[0] // Pega apenas a primeira frase
+      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque|vítima|assassinato)/gi, '')
+      .split(/[.!?\n]/)[0]
       .trim()
       .slice(0, 150);
 
@@ -94,31 +92,33 @@ export class LoremasterService {
         }
       });
 
-      // Se não houver candidatos, possivelmente foi um bloqueio de segurança
-      if (!response.candidates || response.candidates.length === 0) {
-        console.error("Gemini Image API não retornou candidatos. Possível bloqueio de segurança ou cota.");
-        return null;
-      }
-
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          return `data:image/png;base64,${part.inlineData.data}`;
+      const parts = response.candidates?.[0]?.content?.parts;
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+          }
         }
       }
       
+      console.warn("Nenhuma imagem retornada. Verifique os filtros de segurança da API.");
       return null;
     } catch (e: any) {
       console.error("Erro na comunicação com o Palantír:", e);
       // Fallback para um prompt ainda mais simples caso o primeiro falhe
       if (description.length > 50) {
-        return this.generateVision("a mystical forest in Middle-earth");
+        try {
+          return await this.generateVision("a quiet valley in Middle-earth");
+        } catch {
+          return null;
+        }
       }
-      throw e;
+      return null;
     }
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const context = this.constructPartyContext(party, gameState);
     
     const conversationHistory = history.slice(0, -1).slice(-10).map(m => ({
@@ -147,7 +147,7 @@ export class LoremasterService {
   }
 
   async speak(text: string, onEnd?: () => void) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     this.stopSpeaking();
 
     try {
