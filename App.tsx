@@ -55,10 +55,17 @@ const App: React.FC = () => {
   }, [gameState.history, loading]);
 
   const triggerVision = async (desc: string, isMap: boolean = false) => {
+    if (!desc) return;
     setVisionLoading(true);
     try {
       const img = await loremaster.current.generateVision(desc, isMap);
-      if (img) setCurrentVision(img);
+      if (img) {
+        setCurrentVision(img);
+      } else {
+        console.warn("Escriba não conseguiu gerar a visão.");
+      }
+    } catch (err) {
+      console.error("Erro ao evocar visão:", err);
     } finally {
       setVisionLoading(false);
     }
@@ -130,7 +137,7 @@ const App: React.FC = () => {
       savingThrows: [],
       skillProficiencies: [],
       isNPC,
-      inspiration: false, // Correção do erro de build
+      inspiration: false,
       proficiencyBonus: 2,
       armorClass: 10,
       initiative: 0,
@@ -155,7 +162,6 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-full bg-[#040804] text-[#d1dbd1] overflow-hidden font-serif">
       
-      {/* Sidebar de Lendas e Personagens */}
       <aside className={`${showSidebar ? 'w-full md:w-[450px]' : 'w-0'} transition-all duration-300 bg-[#081108] border-r border-emerald-900/30 flex flex-col z-50 fixed lg:relative h-full shadow-2xl overflow-hidden`}>
         {showSidebar && (
           <div className="p-5 flex flex-col h-full animate-in fade-in duration-300">
@@ -242,7 +248,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Visão do Palantír com Lightbox */}
+        {/* Visão do Palantír */}
         {(currentVision || visionLoading) && (
           <div className="absolute top-20 right-6 w-72 md:w-[450px] z-40 group animate-in slide-in-from-right duration-700">
             <div className="parchment p-1 rounded-2xl border-2 border-emerald-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.8)] overflow-hidden relative">
@@ -256,22 +262,22 @@ const App: React.FC = () => {
                   onClick={() => setShowFullscreenVision(true)} 
                 />
               )}
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-[9px] text-white/70 font-cinzel text-center tracking-widest uppercase">Palantír de Arnor (Clique para Ampliar)</p>
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <p className="text-[9px] text-white/70 font-cinzel text-center tracking-widest uppercase">Palantír de Arnor (Ampliar)</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Lightbox para Imagem em Tela Cheia */}
+        {/* Lightbox */}
         {showFullscreenVision && currentVision && (
           <div 
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-500 cursor-zoom-out"
             onClick={() => setShowFullscreenVision(false)}
           >
-            <div className="max-w-[90vw] max-h-[90vh] relative animate-in zoom-in duration-500">
-              <img src={currentVision} className="w-full h-full object-contain rounded-2xl border-4 border-emerald-900 shadow-[0_0_100px_rgba(16,185,129,0.2)]" alt="Visão Ampliada" />
-              <button className="absolute -top-12 right-0 text-white font-cinzel uppercase tracking-widest text-xs border border-white/20 px-4 py-2 rounded-full hover:bg-white/10 transition-all">Fechar Visão ✕</button>
+            <div className="max-w-full max-h-full flex flex-col items-center animate-in zoom-in duration-500">
+              <img src={currentVision} className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl border-4 border-emerald-900 shadow-[0_0_100px_rgba(16,185,129,0.2)]" alt="Visão Ampliada" />
+              <button className="mt-6 text-white font-cinzel uppercase tracking-[0.2em] text-xs border border-white/20 px-6 py-3 rounded-full hover:bg-white/10 transition-all">Fechar [✕]</button>
             </div>
           </div>
         )}
@@ -308,7 +314,6 @@ const App: React.FC = () => {
           <div ref={chatEndRef} className="h-12" />
         </div>
 
-        {/* Input de Comando */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 bg-gradient-to-t from-[#040804] via-[#040804]/90 to-transparent z-40">
           <div className="max-w-4xl mx-auto flex gap-4 items-end">
             <div className="flex-1 relative shadow-2xl rounded-3xl overflow-hidden border border-emerald-900/50">
@@ -329,7 +334,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Painel de Rolagem */}
       {showRollPanel && (
         <div className="fixed inset-0 bg-black/98 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl animate-in zoom-in duration-300">
           <div className="parchment w-full max-w-lg p-12 rounded-[3rem] border-4 border-emerald-950 shadow-2xl">
