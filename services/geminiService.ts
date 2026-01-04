@@ -59,22 +59,24 @@ export class LoremasterService {
     
     if (activeStory) {
       const activeChapter = activeStory.chapters.find(c => c.id === gameState.activeChapterId);
-      storyContext = `\n--- LIVRO ATUAL: ${activeStory.title} ---\nCENÁRIO: ${activeChapter?.title}\nCONTEXTO: ${activeChapter?.description}`;
+      storyContext = `\n--- LENDA ATIVA: ${activeStory.title} ---\nCAPÍTULO: ${activeChapter?.title}\nAMBIENTE: ${activeChapter?.description}`;
     }
 
-    return `SITUAÇÃO ATUAL:\nLocal: ${gameState.location}\nNível de Ameaça (Olho): ${gameState.eyeAwareness}\n${storyContext}\n\nGRUPO DE AVENTUREIROS:\n${partyDetails}`;
+    return `SITUAÇÃO ATUAL:\nLocal: ${gameState.location}\nNível de Ameaça: ${gameState.eyeAwareness}\n${storyContext}\n\nGRUPO:\n${partyDetails}`;
   }
 
-  async generateMap(location: string): Promise<string | null> {
+  async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = isMap 
+      ? `A professional hand-drawn fantasy map in J.R.R. Tolkien style showing ${description} in Eriador, Middle-earth. Sepia ink on aged parchment, detailed terrain, mountains, and calligraphy.`
+      : `A cinematic concept art illustration in J.R.R. Tolkien's Middle-earth style showing ${description}. Focus on atmosphere, epic scale, ancient ruins of Arnor, dark forests, or majestic landscapes. Use a color palette of deep greens, earthy browns, and misty greys. Masterpiece hand-drawn aesthetic.`;
+
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: [{
           role: 'user',
-          parts: [{
-            text: `A professional hand-drawn fantasy map in J.R.R. Tolkien style showing ${location} in Eriador, Middle-earth. Sepia ink on aged parchment, highly detailed terrain, mountains, forests, and elven ruins. Calligraphic labels in Westron style. Masterpiece quality.`
-          }]
+          parts: [{ text: prompt }]
         }],
         config: {
           imageConfig: { aspectRatio: "16:9" }
@@ -93,7 +95,7 @@ export class LoremasterService {
       }
       return null;
     } catch (e) {
-      console.error("Erro ao gerar mapa:", e);
+      console.error("Erro ao gerar visão visual:", e);
       return null;
     }
   }
@@ -102,9 +104,6 @@ export class LoremasterService {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const context = this.constructPartyContext(party, gameState);
     
-    // Filtramos o histórico para garantir que a última mensagem seja do usuário
-    // e que o histórico enviado não contenha a mensagem que estamos prestes a enviar.
-    // O histórico em App.tsx já inclui a última entrada do usuário, por isso pegamos as anteriores.
     const conversationHistory = history.slice(0, -1).slice(-10).map(m => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
@@ -118,14 +117,14 @@ export class LoremasterService {
           { role: 'user', parts: [{ text: userInput }] }
         ],
         config: {
-          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nINFORMAÇÕES DA PARTIDA:\n${context}`,
+          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nINFORMAÇÕES DO JOGO:\n${context}`,
           temperature: 0.7,
         }
       });
 
-      return response.text || "O Escriba permaneceu em silêncio...";
+      return response.text || "O Escriba permanece em silêncio...";
     } catch (error: any) {
-      console.error("Erro detalhado da API Gemini:", error);
+      console.error("Erro API Gemini:", error);
       throw error;
     }
   }
@@ -140,7 +139,7 @@ export class LoremasterService {
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Narre com tom de voz épico e solene de mestre de RPG: ${text}` }] }],
+        contents: [{ parts: [{ text: `Narre com tom épico e imersivo: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -152,7 +151,7 @@ export class LoremasterService {
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) throw new Error("Sem áudio retornado");
+      if (!base64Audio) throw new Error("Sem áudio");
 
       const audioBuffer = await this.decodeAudioData(this.decode(base64Audio), ctx, 24000, 1);
       const source = ctx.createBufferSource();
@@ -167,7 +166,7 @@ export class LoremasterService {
       this.currentSource = source;
       source.start();
     } catch (error) {
-      console.error("Erro no TTS:", error);
+      console.error("Erro TTS:", error);
       onEnd?.();
     }
   }
