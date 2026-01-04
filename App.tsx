@@ -227,9 +227,21 @@ const App: React.FC = () => {
         {/* Chat de Mensagens */}
         <div className="flex-1 overflow-y-auto p-4 md:p-12 lg:p-20 space-y-12 scrollbar-hide pb-52 chat-container">
           {gameState.history.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center opacity-20 text-center py-20">
-              <div className="text-[18vw] lg:text-[140px] font-cinzel text-[#44403c] uppercase leading-none select-none tracking-tighter">Mordor</div>
-              <p className="mt-8 italic text-[#78716c] text-xl md:text-3xl font-serif">Aguardando a vontade do Mestre.</p>
+            <div className="h-full flex flex-col items-center justify-center opacity-80 text-center py-20 animate-in fade-in duration-1000 select-none pointer-events-none">
+                {/* Eye Icon */}
+                <div className="relative w-32 h-32 md:w-48 md:h-48 mb-8">
+                    <div className="absolute inset-0 bg-orange-500 blur-[60px] opacity-20 animate-pulse"></div>
+                    <svg viewBox="0 0 100 60" className="w-full h-full drop-shadow-[0_0_15px_rgba(249,115,22,0.5)]">
+                        <path d="M5,30 Q50,-20 95,30 Q50,80 5,30 Z" fill="#292524" stroke="#f97316" strokeWidth="1.5" />
+                        <circle cx="50" cy="30" r="14" fill="#f97316" className="animate-pulse" />
+                        <ellipse cx="50" cy="30" rx="3" ry="14" fill="#1c1917" />
+                    </svg>
+                </div>
+                <h1 className="text-3xl md:text-5xl font-cinzel text-orange-600/80 uppercase tracking-[0.25em] mb-4 fire-text">O Olho Que Tudo Vê</h1>
+                <p className="italic text-[#78716c] text-lg md:text-xl font-serif max-w-lg leading-relaxed">
+                    "Eu vejo seus medos. Vejo seus desejos. <br/>
+                    O que você ousa perguntar às trevas?"
+                </p>
             </div>
           )}
 
@@ -277,7 +289,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Rodapé com Créditos - Corrigido para visibilidade */}
+        {/* Rodapé com Créditos */}
         <div className="absolute bottom-3 right-5 z-50 pointer-events-none mix-blend-plus-lighter">
            <p className="text-[9px] md:text-[11px] font-cinzel uppercase tracking-[0.3em] text-white/20 text-shadow-sm">
              developed by <span className="text-orange-500/40 font-bold">elias soares</span>
@@ -288,7 +300,17 @@ const App: React.FC = () => {
       {/* Painel de Rolagem - RESPONSIVO */}
       {showRollPanel && (
         <div className="fixed inset-0 bg-[#1c1917]/90 z-[100] flex items-center justify-center p-4 md:p-6 backdrop-blur-xl animate-in zoom-in duration-500">
-          <div className="iron-plate w-full max-w-xl p-8 md:p-16 rounded-[2rem] md:rounded-[3.5rem] border-4 border-[#44403c] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-y-auto max-h-[95dvh]">
+          <div className="iron-plate w-full max-w-xl p-8 md:p-16 rounded-[2rem] md:rounded-[3.5rem] border-4 border-[#44403c] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-y-auto max-h-[95dvh] relative">
+            
+            {/* Botão de Fechar X Adicionado */}
+            <button 
+              onClick={() => setShowRollPanel(false)} 
+              className="absolute top-6 right-6 md:top-8 md:right-8 text-[#78716c] hover:text-orange-500 text-2xl md:text-3xl transition-colors p-2 z-10"
+              aria-label="Fechar painel"
+            >
+              ✕
+            </button>
+
             <h3 className="font-cinzel text-center border-b border-[#44403c] pb-6 md:pb-10 mb-6 md:mb-10 font-bold text-xl md:text-3xl uppercase tracking-[0.4em] text-orange-600 fire-text">Destino nas Chamas</h3>
             <div className="space-y-4 md:space-y-6">
               <select className="w-full bg-[#1c1917] border-2 border-[#44403c] rounded-xl md:rounded-2xl p-4 md:p-5 text-sm md:text-xl font-bold text-[#d6d3d1] outline-none focus:border-orange-500 transition-all" value={selectedCharId} onChange={e => setSelectedCharId(e.target.value)}>
@@ -323,13 +345,6 @@ const App: React.FC = () => {
                   Rolar
                 </button>
               </div>
-              
-              <button 
-                onClick={() => setShowRollPanel(false)} 
-                className="w-full text-[10px] md:text-xs text-[#78716c] font-bold uppercase mt-6 md:mt-8 hover:text-orange-500 tracking-[0.5em] font-cinzel transition-colors"
-              >
-                Voltar
-              </button>
             </div>
           </div>
         </div>
