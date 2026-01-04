@@ -66,37 +66,44 @@ export class LoremasterService {
   }
 
   async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
+    // Sempre reinicializa para garantir que pega a chave do ambiente (Vercel)
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Limpar e simplificar a descrição para evitar erros de prompt
+    const cleanDesc = description.split('\n')[0].slice(0, 200);
+    
     const prompt = isMap 
-      ? `A professional hand-drawn fantasy map in J.R.R. Tolkien style showing ${description} in Eriador, Middle-earth. Sepia ink on aged parchment, detailed terrain, mountains, and calligraphy.`
-      : `A cinematic concept art illustration in J.R.R. Tolkien's Middle-earth style showing ${description}. Focus on atmosphere, epic scale, ancient ruins of Arnor, dark forests, or majestic landscapes. Use a color palette of deep greens, earthy browns, and misty greys. Masterpiece hand-drawn aesthetic.`;
+      ? `Fantasy map of ${cleanDesc}, Tolkien style, sepia ink, parchment, Eriador.`
+      : `Cinematic concept art of ${cleanDesc}, Lord of the Rings style, atmospheric lighting, detailed environment.`;
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: [{
-          role: 'user',
+        contents: {
           parts: [{ text: prompt }]
-        }],
+        },
         config: {
-          imageConfig: { aspectRatio: "16:9" }
+          imageConfig: { 
+            aspectRatio: "16:9"
+          }
         }
       });
 
+      // Busca recursiva pela imagem em todas as partes da resposta
       const candidate = response.candidates?.[0];
-      const parts = candidate?.content?.parts;
-
-      if (parts) {
-        for (const part of parts) {
+      if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
           if (part.inlineData) {
             return `data:image/png;base64,${part.inlineData.data}`;
           }
         }
       }
+      
+      console.warn("Nenhuma inlineData encontrada na resposta do Gemini.");
       return null;
     } catch (e) {
-      console.error("Erro ao gerar visão visual:", e);
-      return null;
+      console.error("Erro fatal ao gerar visão visual:", e);
+      throw e; // Lança para o App.tsx capturar no catch (visionError)
     }
   }
 
