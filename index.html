@@ -4,24 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#050000">
+    <meta name="theme-color" content="#1c1917">
     <title>Loremaster: Chamas de Mordor</title>
-    <!-- Favicon: Um olho flamejante estilizado em SVG -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='50%' cy='50%' r='50%'><stop offset='0%' stop-color='%23ffcc00'/><stop offset='50%' stop-color='%23ff4500'/><stop offset='100%' stop-color='%23000'/></radialGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23g)'/><path d='M20 50 Q50 20 80 50 Q50 80 20 50' fill='none' stroke='black' stroke-width='8'/><circle cx='50' cy='50' r='12' fill='black'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='50%' cy='50%' r='50%'><stop offset='0%' stop-color='%23fff000'/><stop offset='30%' stop-color='%23ff4500'/><stop offset='70%' stop-color='%238b0000'/><stop offset='100%' stop-color='%23000'/></radialGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)'/><path d='M15 50 C30 20 70 20 85 50 C70 80 30 80 15 50 Z' fill='black' opacity='0.8'/><ellipse cx='50' cy='50' rx='8' ry='25' fill='black'/><path d='M20 50 L80 50' stroke='%23ff4500' stroke-width='1' opacity='0.3'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap" rel="stylesheet">
     <style>
       :root {
-        --mordor-black: #050000;
-        --mordor-iron: #1a1a1a;
-        --mordor-fire: #ff4500;
-        --mordor-blood: #8b0000;
-        --mordor-ash: #a3a3a3;
+        --mordor-bg: #1c1917; /* Stone 900 - Um cinza/marrom muito escuro, não preto puro */
+        --mordor-plate: #292524; /* Stone 800 */
+        --mordor-fire: #f97316; /* Orange 500 */
       }
 
       body {
-        background-color: var(--mordor-black);
-        color: #e5e7eb;
+        background-color: var(--mordor-bg);
+        color: #d6d3d1; /* Stone 300 */
         font-family: 'IM Fell English', serif;
         overflow: hidden;
         overscroll-behavior: none;
@@ -32,10 +29,10 @@
       .font-medieval { font-family: 'MedievalSharp', cursive; }
       
       .iron-plate {
-        background: linear-gradient(145deg, #1f1f1f, #0a0a0a);
-        color: #e5e7eb;
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.9), 0 4px 10px rgba(255, 69, 0, 0.05);
-        border: 1px solid #2a2a2a;
+        background: linear-gradient(145deg, #292524, #1c1917);
+        color: #e7e5e4;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3);
+        border: 1px solid #44403c;
         position: relative;
       }
 
@@ -43,34 +40,33 @@
         content: '';
         position: absolute;
         inset: 0;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        opacity: 0.03;
         pointer-events: none;
       }
       
       .fire-glow {
-        box-shadow: 0 0 20px rgba(255, 69, 0, 0.2);
+        box-shadow: 0 0 15px rgba(249, 115, 22, 0.15);
       }
       
       .fire-text {
         color: var(--mordor-fire);
-        text-shadow: 0 0 12px rgba(255, 69, 0, 0.4);
+        text-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
       }
 
       .scrollbar-hide::-webkit-scrollbar { display: none; }
       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       
       @keyframes lava-pulse {
-        0% { border-color: #331100; box-shadow: 0 0 5px rgba(255, 69, 0, 0.1); }
-        50% { border-color: #8b0000; box-shadow: 0 0 20px rgba(255, 69, 0, 0.3); }
-        100% { border-color: #331100; box-shadow: 0 0 5px rgba(255, 69, 0, 0.1); }
+        0% { border-color: #44403c; box-shadow: 0 0 5px rgba(249, 115, 22, 0.05); }
+        50% { border-color: #7c2d12; box-shadow: 0 0 15px rgba(249, 115, 22, 0.2); }
+        100% { border-color: #44403c; box-shadow: 0 0 5px rgba(249, 115, 22, 0.05); }
       }
       .animate-lava { animation: lava-pulse 5s infinite ease-in-out; }
 
-      /* Ajustes de responsividade para o input de texto no mobile */
       @media (max-width: 768px) {
         .chat-container {
-          padding-bottom: 140px;
+          padding-bottom: 160px;
         }
       }
     </style>

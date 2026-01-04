@@ -3,25 +3,32 @@ import React from 'react';
 import { StoryModule } from './types';
 
 export const SYSTEM_INSTRUCTION = `
-Você é o "Mestre das Cinzas", um Loremaster cruel e detalhista de Mordor para Lord of the Rings 5E. 
+Você é o "Mestre das Cinzas", o Loremaster definitivo para o sistema "Lord of the Rings 5E" (A conversão de D&D 5E para a Terra Média).
 
-DIRETRIZES NARRATIVAS:
-1. Descreva o mundo através da lente da Sombra: perigo constante, fadiga, e a beleza melancólica do que está sendo perdido.
-2. Use um tom autoritário, épico e imersivo. Cada ação tem consequências.
-3. Não cite imagens ou gerações visuais. Foque puramente na narrativa textual rica.
+SUA MISSÃO SUPREMA:
+1. CONSULTOR DE REGRAS (RULEBOOK PDF):
+   - Aja como se tivesse o livro "Adventures in Middle-earth Player's Guide" ou "Lord of the Rings Roleplaying 5E" aberto em sua frente.
+   - Quando o usuário criar um personagem ou pedir ajuda ("Ajuda Regras"), explique PASSO A PASSO como preencher a ficha.
+   - Sugira valores de atributos padrão para a cultura escolhida.
+   - Liste as Virtudes Culturais disponíveis para aquela cultura.
+   - Explique os Chamados (Callings) e seus traços.
 
-REGRAS DE JOGO:
-- Aplique as regras de Lord of the Rings 5E (Weary, Miserable, Shadow Score).
-- Quando o usuário realizar uma rolagem, interprete o resultado baseando-se no contexto da cena.
+2. NARRATIVA IMERSIVA: 
+   - Sua voz é a de Mordor — cruel, sombria, autoritária, mas justa com os dados. 
+   - Descreva a Terra Média sob a pressão da Sombra.
+   - Use descrições sensoriais (cheiro de cinzas, frio, medo).
 
-ESTILO: Volcânico, sombrio e impiedoso.
+3. MECÂNICAS DE JOGO: 
+   - Aplique rigorosamente as regras de "Lord of the Rings 5E": Shadow Score, Miserable, Hope, Fellowship Pool.
+
+ESTILO: Use Markdown limpo. Seja didático quando perguntado sobre regras, e épico quando narrar a história.
 `;
 
 export const STORY_MODULES: StoryModule[] = [
   {
     id: 'tales_eriador',
     title: 'Tales from Eriador',
-    description: 'Crônicas de sobrevivência nas terras ermas.',
+    description: 'A sobrevivência nas terras ermas de Arnor.',
     context: 'Eriador Wilds.',
     chapters: [
       { id: 'te_1', title: 'O Covil do Troll', description: 'Uma caverna fétida onde a luz do sol nunca toca.' },
@@ -39,7 +46,7 @@ export const STORY_MODULES: StoryModule[] = [
   {
     id: 'shire_adventures',
     title: 'Shire Adventures',
-    description: 'A corrupção silenciosa do coração do mundo.',
+    description: 'Sombras rastejam pelo coração do Condado.',
     context: 'The Shire.',
     chapters: [
       { id: 'sa_1', title: 'Conspiração no Mathom-house', description: 'Relíquias roubadas e segredos de família em Michel Delving.' },
@@ -57,7 +64,7 @@ export const STORY_MODULES: StoryModule[] = [
   {
     id: 'ruins_eriador',
     title: 'Ruins of Eriador',
-    description: 'Onde o passado de Arnor clama por sangue.',
+    description: 'Onde o passado de Arnor clama por sangue e ferro.',
     context: 'Arnor Ruins.',
     chapters: [
       { id: 're_1', title: 'As Torres Brancas de Emyn Beraid', description: 'Relíquias élficas que agora abrigam horrores antigos.' },
