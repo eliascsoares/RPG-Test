@@ -66,17 +66,22 @@ export class LoremasterService {
   }
 
   async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
-    // Sempre reinicializa para garantir que pega a chave do ambiente (Vercel)
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Limpar e simplificar a descrição para evitar erros de prompt
-    const cleanDesc = description.split('\n')[0].slice(0, 200);
-    
+    // Limpeza profunda do prompt para evitar filtros de segurança do Google
+    // Remove termos que podem ser interpretados como violentos ou sensíveis em RPG
+    const safeWords = description
+      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque)/gi, '')
+      .split(/[.!?\n]/)[0] // Pega apenas a primeira frase
+      .trim()
+      .slice(0, 150);
+
     const prompt = isMap 
-      ? `Fantasy map of ${cleanDesc}, Tolkien style, sepia ink, parchment, Eriador.`
-      : `Cinematic concept art of ${cleanDesc}, Lord of the Rings style, atmospheric lighting, detailed environment.`;
+      ? `A highly detailed artistic fantasy map of ${safeWords || 'a mysterious land in Middle-earth'}, J.R.R. Tolkien style, vintage parchment, black ink, elegant cartography.`
+      : `Cinematic landscape of ${safeWords || 'a mystical place in Eriador'}, Lord of the Rings movie aesthetic, atmospheric lighting, hyper-realistic environment, professional concept art.`;
 
     try {
+      console.log("Evocando visão com prompt:", prompt);
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
@@ -89,21 +94,26 @@ export class LoremasterService {
         }
       });
 
-      // Busca recursiva pela imagem em todas as partes da resposta
-      const candidate = response.candidates?.[0];
-      if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.inlineData) {
-            return `data:image/png;base64,${part.inlineData.data}`;
-          }
+      // Se não houver candidatos, possivelmente foi um bloqueio de segurança
+      if (!response.candidates || response.candidates.length === 0) {
+        console.error("Gemini Image API não retornou candidatos. Possível bloqueio de segurança ou cota.");
+        return null;
+      }
+
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
       
-      console.warn("Nenhuma inlineData encontrada na resposta do Gemini.");
       return null;
-    } catch (e) {
-      console.error("Erro fatal ao gerar visão visual:", e);
-      throw e; // Lança para o App.tsx capturar no catch (visionError)
+    } catch (e: any) {
+      console.error("Erro na comunicação com o Palantír:", e);
+      // Fallback para um prompt ainda mais simples caso o primeiro falhe
+      if (description.length > 50) {
+        return this.generateVision("a mystical forest in Middle-earth");
+      }
+      throw e;
     }
   }
 

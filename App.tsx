@@ -30,6 +30,7 @@ const App: React.FC = () => {
   const [visionError, setVisionError] = useState<string | null>(null);
   const [visionVisible, setVisionVisible] = useState(false);
   const [showFullscreenVision, setShowFullscreenVision] = useState(false);
+  const [lastVisionDesc, setLastVisionDesc] = useState('');
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
@@ -61,6 +62,7 @@ const App: React.FC = () => {
 
   const triggerVision = async (desc: string, isMap: boolean = false) => {
     if (!desc) return;
+    setLastVisionDesc(desc);
     setVisionVisible(true);
     setVisionLoading(true);
     setVisionError(null);
@@ -68,11 +70,12 @@ const App: React.FC = () => {
       const img = await loremaster.current.generateVision(desc, isMap);
       if (img) {
         setCurrentVision(img);
+        setVisionError(null);
       } else {
-        setVisionError("O Escriba não conseguiu desenhar esta visão.");
+        setVisionError("O Escriba não conseguiu desenhar esta visão. Tente um local menos perigoso.");
       }
-    } catch (err) {
-      setVisionError("As Sombras bloquearam a comunicação com o Palantír.");
+    } catch (err: any) {
+      setVisionError("As Sombras bloquearam o Palantír. Verifique sua chave de API ou conexão.");
       console.error(err);
     } finally {
       setVisionLoading(false);
@@ -102,7 +105,7 @@ const App: React.FC = () => {
       } else {
         const keywords = ['mapa', 'ver', 'olhar', 'lugar', 'chegam', 'ruína', 'estrada', 'paisagem', 'visão', 'vejam'];
         if (keywords.some(k => response.toLowerCase().includes(k))) {
-          triggerVision(response.slice(0, 400));
+          triggerVision(response);
         }
       }
 
@@ -170,7 +173,6 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-full bg-[#040804] text-[#d1dbd1] overflow-hidden font-serif">
       
-      {/* Sidebar de Lendas e Personagens */}
       <aside className={`${showSidebar ? 'w-full md:w-[450px]' : 'w-0'} transition-all duration-300 bg-[#081108] border-r border-emerald-900/30 flex flex-col z-50 fixed lg:relative h-full shadow-2xl overflow-hidden`}>
         {showSidebar && (
           <div className="p-5 flex flex-col h-full animate-in fade-in duration-300">
@@ -261,12 +263,10 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Visão do Palantír (Persistente) */}
         {visionVisible && (
           <div className="absolute top-20 right-6 w-72 md:w-[450px] z-[60] group animate-in slide-in-from-right duration-500">
             <div className="parchment p-1 rounded-2xl border-2 border-emerald-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.8)] overflow-hidden relative">
               
-              {/* Botão de Fechar Miniatura */}
               <button 
                 onClick={() => setVisionVisible(false)} 
                 className="absolute top-2 right-2 z-10 bg-black/60 text-white w-8 h-8 rounded-full border border-white/20 hover:bg-red-900 transition-colors flex items-center justify-center font-bold"
@@ -281,7 +281,13 @@ const App: React.FC = () => {
               ) : visionError ? (
                 <div className="h-40 md:h-64 bg-red-950/20 flex flex-col items-center justify-center text-red-500 italic p-6 text-center">
                   <span className="text-2xl mb-2">👁️‍🗨️</span>
-                  <p className="text-[10px] font-cinzel uppercase tracking-widest">{visionError}</p>
+                  <p className="text-[10px] font-cinzel uppercase tracking-widest mb-4">{visionError}</p>
+                  <button 
+                    onClick={() => triggerVision(lastVisionDesc)}
+                    className="text-[8px] bg-emerald-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-all"
+                  >
+                    TENTAR NOVAMENTE
+                  </button>
                 </div>
               ) : currentVision ? (
                 <img 
@@ -301,7 +307,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Lightbox (Tela Cheia) */}
         {showFullscreenVision && currentVision && (
           <div 
             className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-500 cursor-zoom-out"
@@ -314,7 +319,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Histórico do Chat */}
         <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-16 space-y-12 scrollbar-hide pb-52">
           {gameState.history.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center opacity-10 text-center py-20 grayscale">
@@ -347,7 +351,6 @@ const App: React.FC = () => {
           <div ref={chatEndRef} className="h-12" />
         </div>
 
-        {/* Input de Comando */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 bg-gradient-to-t from-[#040804] via-[#040804]/90 to-transparent z-40">
           <div className="max-w-4xl mx-auto flex gap-4 items-end">
             <div className="flex-1 relative shadow-2xl rounded-3xl overflow-hidden border border-emerald-900/50">
@@ -368,7 +371,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Painel de Rolagem */}
       {showRollPanel && (
         <div className="fixed inset-0 bg-black/98 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl animate-in zoom-in duration-300">
           <div className="parchment w-full max-w-lg p-12 rounded-[3rem] border-4 border-emerald-950 shadow-2xl">
