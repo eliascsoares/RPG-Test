@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [visionVisible, setVisionVisible] = useState(false);
   const [showFullscreenVision, setShowFullscreenVision] = useState(false);
   const [lastVisionDesc, setLastVisionDesc] = useState('');
+  const [hasCustomKey, setHasCustomKey] = useState(false);
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
@@ -49,6 +50,14 @@ const App: React.FC = () => {
     if (savedChars) try { setCharacters(JSON.parse(savedChars)); } catch(e) {}
     if (savedState) try { setGameState(JSON.parse(savedState)); } catch(e) {}
     if (window.innerWidth < 1024) setShowSidebar(false);
+
+    const checkKey = async () => {
+      if ((window as any).aistudio?.hasSelectedApiKey) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        setHasCustomKey(hasKey);
+      }
+    };
+    checkKey();
   }, []);
 
   useEffect(() => {
@@ -59,6 +68,14 @@ const App: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.history, loading]);
+
+  const handleSelectKey = async () => {
+    if ((window as any).aistudio?.openSelectKey) {
+      await (window as any).aistudio.openSelectKey();
+      setHasCustomKey(true);
+      if (lastVisionDesc) triggerVision(lastVisionDesc);
+    }
+  };
 
   const triggerVision = async (desc: string, isMap: boolean = false) => {
     if (!desc) return;
@@ -72,10 +89,16 @@ const App: React.FC = () => {
         setCurrentVision(img);
         setVisionError(null);
       } else {
-        setVisionError("O Escriba não conseguiu desenhar esta visão. Tente um local menos perigoso.");
+        setVisionError("O Escriba não conseguiu desenhar esta visão. Tente novamente.");
       }
     } catch (err: any) {
-      setVisionError("As Sombras bloquearam o Palantír. Verifique sua chave de API ou conexão.");
+      if (err.message === 'QUOTA_EXHAUSTED') {
+        setVisionError("O Palantír está sem energia (Cota Esgotada). Use sua própria chave de API para continuar.");
+      } else if (err.message === 'PERMISSION_DENIED') {
+        setVisionError("Acesso Negado (403). Sua chave atual não tem permissão para gerar imagens de alta qualidade. Use uma chave de um projeto com faturamento ativo.");
+      } else {
+        setVisionError("As Sombras bloquearam o Palantír. Tente configurar sua própria chave de API nas opções abaixo.");
+      }
       console.error(err);
     } finally {
       setVisionLoading(false);
@@ -103,7 +126,7 @@ const App: React.FC = () => {
       if (autoVision) {
         triggerVision(gameState.location, true);
       } else {
-        const keywords = ['mapa', 'ver', 'olhar', 'lugar', 'chegam', 'ruína', 'estrada', 'paisagem', 'visão', 'vejam'];
+        const keywords = ['mapa', 'ver', 'olhar', 'lugar', 'chegam', 'ruína', 'estrada', 'paisagem', 'visão', 'vejam', 'desenha', 'mostra'];
         if (keywords.some(k => response.toLowerCase().includes(k))) {
           triggerVision(response);
         }
@@ -250,6 +273,14 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            {!hasCustomKey && (
+              <button 
+                onClick={handleSelectKey}
+                className="bg-amber-950/40 border border-amber-500/30 px-4 py-2 rounded-xl text-amber-400 text-[10px] font-bold hover:bg-amber-900/40 transition-all font-cinzel uppercase tracking-widest"
+              >
+                🔑 Conectar Palantír
+              </button>
+            )}
             <button 
               onClick={() => triggerVision(gameState.history[gameState.history.length-1]?.text || gameState.location)} 
               disabled={visionLoading} 
@@ -281,13 +312,22 @@ const App: React.FC = () => {
               ) : visionError ? (
                 <div className="h-40 md:h-64 bg-red-950/20 flex flex-col items-center justify-center text-red-500 italic p-6 text-center">
                   <span className="text-2xl mb-2">👁️‍🗨️</span>
-                  <p className="text-[10px] font-cinzel uppercase tracking-widest mb-4">{visionError}</p>
-                  <button 
-                    onClick={() => triggerVision(lastVisionDesc)}
-                    className="text-[8px] bg-emerald-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-all"
-                  >
-                    TENTAR NOVAMENTE
-                  </button>
+                  <p className="text-[10px] font-cinzel uppercase tracking-widest mb-4 leading-tight">{visionError}</p>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => triggerVision(lastVisionDesc)}
+                      className="text-[8px] bg-emerald-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-all"
+                    >
+                      TENTAR NOVAMENTE
+                    </button>
+                    <button 
+                      onClick={handleSelectKey}
+                      className="text-[8px] bg-amber-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-700 transition-all"
+                    >
+                      CONFIGURAR MINHA CHAVE (403/429)
+                    </button>
+                  </div>
+                  <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="mt-4 text-[7px] text-emerald-900/50 underline hover:text-emerald-900">Sobre chaves e faturamento</a>
                 </div>
               ) : currentVision ? (
                 <img 

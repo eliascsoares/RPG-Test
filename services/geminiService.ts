@@ -66,54 +66,72 @@ export class LoremasterService {
   }
 
   async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
+    // ESSENCIAL: Recriar a instância para usar a chave selecionada pelo usuário no diálogo aistudio
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     
-    const safeWords = description
-      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque|vítima|assassinato)/gi, '')
+    // Simplificação extrema do prompt para evitar filtros de segurança e erros de processamento
+    const cleanDesc = description
+      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque|vítima|assassinato|ferir|olhos|testemunha)/gi, '')
       .split(/[.!?\n]/)[0]
-      .trim()
-      .slice(0, 150);
+      .trim();
+
+    const shortDesc = cleanDesc.length > 80 ? cleanDesc.slice(0, 80) + "..." : cleanDesc;
 
     const prompt = isMap 
-      ? `A highly detailed artistic fantasy map of ${safeWords || 'a mysterious land in Middle-earth'}, J.R.R. Tolkien style, vintage parchment, black ink, elegant cartography.`
-      : `Cinematic landscape of ${safeWords || 'a mystical place in Eriador'}, Lord of the Rings movie aesthetic, atmospheric lighting, hyper-realistic environment, professional concept art.`;
+      ? `High fantasy map of ${shortDesc || 'Middle-earth'}, Tolkien style, parchment.`
+      : `Cinematic landscape of ${shortDesc || 'Eriador'}, Lord of the Rings movie style, hyper-realistic, 8k.`;
 
     try {
-      console.log("Evocando visão com prompt:", prompt);
+      // Tentar o modelo de alta qualidade primeiro (Requer faturamento/chave própria)
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: prompt }]
-        },
+        model: 'gemini-3-pro-image-preview',
+        contents: { parts: [{ text: prompt }] },
         config: {
-          imageConfig: { 
-            aspectRatio: "16:9"
-          }
+          imageConfig: { aspectRatio: "16:9", imageSize: "1K" }
         }
       });
 
       const parts = response.candidates?.[0]?.content?.parts;
       if (parts) {
         for (const part of parts) {
-          if (part.inlineData) {
-            return `data:image/png;base64,${part.inlineData.data}`;
-          }
+          if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
-      
-      console.warn("Nenhuma imagem retornada. Verifique os filtros de segurança da API.");
       return null;
     } catch (e: any) {
-      console.error("Erro na comunicação com o Palantír:", e);
-      // Fallback para um prompt ainda mais simples caso o primeiro falhe
-      if (description.length > 50) {
-        try {
-          return await this.generateVision("a quiet valley in Middle-earth");
-        } catch {
-          return null;
-        }
+      const errorStr = e.message || '';
+      console.error("Erro Palantír:", errorStr);
+
+      // Erro 403: Geralmente significa que o modelo gemini-3-pro-image-preview não está disponível para esta chave
+      // ou a chave não tem faturamento habilitado.
+      if (errorStr.includes('403') || errorStr.includes('permission')) {
+        throw new Error('PERMISSION_DENIED');
       }
-      return null;
+
+      // Erro 429: Cota esgotada
+      if (errorStr.includes('429') || errorStr.includes('quota')) {
+        throw new Error('QUOTA_EXHAUSTED');
+      }
+
+      // Fallback automático para o modelo Flash (mais permissivo, porém com menos cota)
+      try {
+        const flashResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: prompt }] }
+        });
+        const parts = flashResponse.candidates?.[0]?.content?.parts;
+        if (parts) {
+          for (const part of parts) {
+            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+          }
+        }
+      } catch (innerE: any) {
+        console.error("Fallback Flash falhou:", innerE.message);
+        if (innerE.message?.includes('429')) throw new Error('QUOTA_EXHAUSTED');
+        if (innerE.message?.includes('403')) throw new Error('PERMISSION_DENIED');
+      }
+      
+      throw e;
     }
   }
 
@@ -156,7 +174,7 @@ export class LoremasterService {
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Narre com tom épico e imersivo: ${text}` }] }],
+        contents: [{ parts: [{ text: `Say with a grave, epic, and immersive tone: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
