@@ -50,8 +50,8 @@ export class LoremasterService {
 
   private constructPartyContext(party: Character[], gameState: GameState): string {
     const partyDetails = party.map(p => `
-      - [${p.isNPC ? 'Aliado/NPC' : 'Personagem'}] ${p.name}
-        Defesa: ${p.armorClass} | HP: ${p.hp.current}/${p.hp.max} | Sombra: ${p.shadow.score}
+      - [${p.isNPC ? 'Servo/Aliado' : 'Herói'}] ${p.name}
+        CA: ${p.armorClass} | HP: ${p.hp.current}/${p.hp.max} | Sombra: ${p.shadow.score}
     `).join('\n');
 
     const activeStory = STORY_MODULES.find(s => s.id === gameState.activeStoryId);
@@ -59,87 +59,17 @@ export class LoremasterService {
     
     if (activeStory) {
       const activeChapter = activeStory.chapters.find(c => c.id === gameState.activeChapterId);
-      storyContext = `\n--- LENDA ATIVA: ${activeStory.title} ---\nCAPÍTULO: ${activeChapter?.title}\nAMBIENTE: ${activeChapter?.description}`;
+      storyContext = `\nLenda Ativa: ${activeStory.title}\nCena Atual: ${activeChapter?.title}\nAmbiente: ${activeChapter?.description}`;
     }
 
-    return `SITUAÇÃO ATUAL:\nLocal: ${gameState.location}\nNível de Ameaça: ${gameState.eyeAwareness}\n${storyContext}\n\nGRUPO:\n${partyDetails}`;
-  }
-
-  async generateVision(description: string, isMap: boolean = false): Promise<string | null> {
-    // ESSENCIAL: Recriar a instância para usar a chave selecionada pelo usuário no diálogo aistudio
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    
-    // Simplificação extrema do prompt para evitar filtros de segurança e erros de processamento
-    const cleanDesc = description
-      .replace(/(morte|sangue|matar|assassinar|corpo|cadáver|ferimento|golpe|batalha|guerra|tortura|espada|ataque|vítima|assassinato|ferir|olhos|testemunha)/gi, '')
-      .split(/[.!?\n]/)[0]
-      .trim();
-
-    const shortDesc = cleanDesc.length > 80 ? cleanDesc.slice(0, 80) + "..." : cleanDesc;
-
-    const prompt = isMap 
-      ? `High fantasy map of ${shortDesc || 'Middle-earth'}, Tolkien style, parchment.`
-      : `Cinematic landscape of ${shortDesc || 'Eriador'}, Lord of the Rings movie style, hyper-realistic, 8k.`;
-
-    try {
-      // Tentar o modelo de alta qualidade primeiro (Requer faturamento/chave própria)
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
-        contents: { parts: [{ text: prompt }] },
-        config: {
-          imageConfig: { aspectRatio: "16:9", imageSize: "1K" }
-        }
-      });
-
-      const parts = response.candidates?.[0]?.content?.parts;
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-        }
-      }
-      return null;
-    } catch (e: any) {
-      const errorStr = e.message || '';
-      console.error("Erro Palantír:", errorStr);
-
-      // Erro 403: Geralmente significa que o modelo gemini-3-pro-image-preview não está disponível para esta chave
-      // ou a chave não tem faturamento habilitado.
-      if (errorStr.includes('403') || errorStr.includes('permission')) {
-        throw new Error('PERMISSION_DENIED');
-      }
-
-      // Erro 429: Cota esgotada
-      if (errorStr.includes('429') || errorStr.includes('quota')) {
-        throw new Error('QUOTA_EXHAUSTED');
-      }
-
-      // Fallback automático para o modelo Flash (mais permissivo, porém com menos cota)
-      try {
-        const flashResponse = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
-          contents: { parts: [{ text: prompt }] }
-        });
-        const parts = flashResponse.candidates?.[0]?.content?.parts;
-        if (parts) {
-          for (const part of parts) {
-            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-          }
-        }
-      } catch (innerE: any) {
-        console.error("Fallback Flash falhou:", innerE.message);
-        if (innerE.message?.includes('429')) throw new Error('QUOTA_EXHAUSTED');
-        if (innerE.message?.includes('403')) throw new Error('PERMISSION_DENIED');
-      }
-      
-      throw e;
-    }
+    return `CONTEXTO DE JOGO:\nLocalização: ${gameState.location}\nOlho de Sauron (Ameaça): ${gameState.eyeAwareness}\n${storyContext}\n\nHERÓIS E SERVOS:\n${partyDetails}`;
   }
 
   async sendMessage(userInput: string, party: Character[], gameState: GameState, history: Message[]) {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const context = this.constructPartyContext(party, gameState);
     
-    const conversationHistory = history.slice(0, -1).slice(-10).map(m => ({
+    const conversationHistory = history.slice(0, -1).slice(-12).map(m => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
     }));
@@ -152,14 +82,14 @@ export class LoremasterService {
           { role: 'user', parts: [{ text: userInput }] }
         ],
         config: {
-          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nINFORMAÇÕES DO JOGO:\n${context}`,
-          temperature: 0.7,
+          systemInstruction: `${SYSTEM_INSTRUCTION}\n\nINFOS ATUAIS:\n${context}`,
+          temperature: 0.8,
         }
       });
 
-      return response.text || "O Escriba permanece em silêncio...";
+      return response.text || "As chamas de Mordor consomem as palavras...";
     } catch (error: any) {
-      console.error("Erro API Gemini:", error);
+      console.error("Erro Gemini:", error);
       throw error;
     }
   }
@@ -174,12 +104,12 @@ export class LoremasterService {
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Say with a grave, epic, and immersive tone: ${text}` }] }],
+        contents: [{ parts: [{ text: `Speak as a dark, powerful, and gravelly overlord from Mordor: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Puck' },
+              prebuiltVoiceConfig: { voiceName: 'Charon' },
             },
           },
         },
